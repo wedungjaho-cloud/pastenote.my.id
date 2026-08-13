@@ -173,11 +173,11 @@ function inboxScript(email) {
             +'<div class="mail-detail-right">'
             +'<span class="mail-detail-date">'+fmtDate(m.date)+'</span>'
             +(code?codeH:'')
-            +'<button class="mail-del-btn" data-del="'+i+'" title="Delete email">&#128465;</button>'
+            +'<button class="mail-del-btn" data-del="'+i+'" title="Delete email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>'
             +'</div>'
             +'</div>'
 
-            +(deleting[i]?'<div class="mail-del-confirm"><span>Delete this email permanently?</span><div class="mail-del-actions"><button class="mail-del-cancel" data-dcancel="'+i+'">Cancel</button><button class="mail-del-go" data-dgo="'+i+'">Delete</button></div></div>':'')
+            +(deleting[i]?'<div class="mail-del-confirm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.7"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg><span>Delete permanently?</span><div class="mail-del-actions"><button class="btn btn-sm btn-s mail-del-cancel" data-dcancel="'+i+'">Cancel</button><button class="btn btn-sm mail-del-go" data-dgo="'+i+'">Delete</button></div></div>':'')
 
             +(isMeta?'<div class="mail-detail-meta"><table class="mail-meta-tbl">'
             +'<tr><td class="meta-k">from:</td><td class="meta-v">'+h(sender)+(m.fromEmail?' &lt;'+h(m.fromEmail)+'&gt;':'')+'</td></tr>'
@@ -290,7 +290,7 @@ function inboxScript(email) {
 
     async function doDelete(idx){
       var m=msgs[idx];
-      if(!m||!m.id){showToast('','Cannot delete: no message ID');return}
+      if(!m||!m.id){showToast('','Click Read Inbox first to enable delete');return}
       var item=document.querySelector('.mail-item[data-i="'+idx+'"]');
       if(item)item.classList.add('deleting');
       try{
