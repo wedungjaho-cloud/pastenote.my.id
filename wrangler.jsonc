@@ -1,0 +1,14 @@
+{
+  "name": "pastenote",
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": "src/index.js",
+  "compatibility_date": "2025-04-01",
+  "workers_dev": true,
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "740c51abe04d4528aa40bd7afe5999d5"
+    }
+  ],
+  "vars": {}
+}

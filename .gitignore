@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+.wrangler/
+
+# Secrets & Credentials
+cf-token.txt
+github-token.txt
+set-domain.js
+gen-keys.js
+reference/check-token.js
+
+# Environment files
+.env
+.env.*
+*.env
+
+# Reference data
+reference/contoh.har
+reference/har-output.txt
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+.DS_Store
