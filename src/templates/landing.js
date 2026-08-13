@@ -34,6 +34,11 @@ export function renderLanding() {
         </div>
 
         <p class="landing-footnote">No link or password? There is nothing to sign up for here.</p>
+
+        <footer class="landing-foot">
+          <span class="landing-foot-dot" aria-hidden="true"></span>
+          <span class="landing-foot-text">pastenote · private note space</span>
+        </footer>
       </section>
     </main>`,
   }));
