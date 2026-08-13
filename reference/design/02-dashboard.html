@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>pastenote — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0b0c0e; --surface:#141519; --surface-2:#1b1d22; --surface-3:#22242a;
+    --border:#262930; --border-strong:#34373f;
+    --ink:#edeef1; --ink-dim:#c7c9cf; --muted:#8a8d96; --muted-2:#5f6169;
+    --green:#3ecf8e; --green-strong:#2fb87d; --green-dim:rgba(62,207,142,.14);
+    --amber:#e8a94b; --amber-dim:rgba(232,169,75,.13); --amber-strong:#f0bd6f;
+    --red:#e5625e; --red-dim:rgba(229,98,94,.12);
+    --font-ui:'Inter',system-ui,-apple-system,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+    --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:20px; --r-full:999px;
+    --ease:cubic-bezier(.22,1,.36,1);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:var(--font-ui); background:var(--void); color:var(--ink);
+    -webkit-font-smoothing:antialiased; min-height:100vh; padding-bottom:60px;
+  }
+  a{color:inherit; text-decoration:none;}
+
+  /* header */
+  header{
+    position:sticky; top:0; z-index:10;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 28px; background:rgba(11,12,14,.82); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .logo{ display:flex; align-items:center; gap:9px; font-size:17px; font-weight:800; letter-spacing:-.01em;}
+  .logo .mark{
+    width:26px; height:26px; border-radius:8px; background:var(--green-dim);
+    border:1px solid rgba(62,207,142,.3); display:flex; align-items:center; justify-content:center;
+  }
+  .logo .mark svg{width:14px; height:14px; color:var(--green);}
+  .logo .note{color:var(--green);}
+  .hdr-right{ display:flex; align-items:center; gap:10px; }
+  .acct{
+    font-family:var(--font-mono); font-size:12px; color:var(--muted);
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--r-full);
+    padding:7px 13px;
+  }
+  .icon-btn{
+    width:34px; height:34px; border-radius:var(--r-full); background:var(--surface);
+    border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+    color:var(--muted); cursor:pointer; transition:border-color .15s, color .15s, transform .12s;
+  }
+  .icon-btn:hover{ color:var(--ink); border-color:var(--border-strong); }
+  .icon-btn:active{ transform:scale(.94); }
+  .icon-btn svg{width:16px; height:16px;}
+
+  main{ max-width:700px; margin:0 auto; padding:32px 24px 0; display:flex; flex-direction:column; gap:20px; }
+
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg);
+    overflow:hidden; animation:fadeUp .5s var(--ease) both;
+  }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;} }
+
+  .card-head{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:16px 20px; border-bottom:1px solid var(--border);
+  }
+  .card-title{ display:flex; align-items:center; gap:10px; }
+  .chip{
+    width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+  }
+  .chip.green{ background:var(--green-dim); color:var(--green); }
+  .chip.amber{ background:var(--amber-dim); color:var(--amber); }
+  .chip svg{width:15px; height:15px;}
+  .card-title h2{ font-size:14.5px; font-weight:700; letter-spacing:-.005em; }
+
+  .notes-body{ padding:18px 20px 20px; font-size:13.5px; line-height:1.6; color:var(--ink-dim); }
+
+  /* inbox controls */
+  .controls{ display:flex; align-items:center; gap:10px; }
+  .switch{
+    position:relative; width:36px; height:20px; border-radius:var(--r-full);
+    background:var(--surface-3); border:1px solid var(--border); cursor:pointer; flex-shrink:0;
+    transition:background .18s var(--ease), border-color .18s;
+  }
+  .switch.on{ background:var(--green-dim); border-color:rgba(62,207,142,.4); }
+  .switch .thumb{
+    position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%;
+    background:var(--muted-2); transition:transform .2s var(--ease), background .2s;
+  }
+  .switch.on .thumb{ transform:translateX(16px); background:var(--green); }
+
+  select.interval{
+    -webkit-appearance:none; appearance:none;
+    background:var(--surface-2) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%238a8d96" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>') no-repeat right 9px center/13px;
+    border:1px solid var(--border); border-radius:var(--r-sm); color:var(--ink-dim);
+    font-family:var(--font-mono); font-size:12px; padding:7px 26px 7px 11px; cursor:pointer;
+  }
+  select.interval:focus{ outline:none; border-color:var(--green); }
+
+  .btn-primary{
+    display:flex; align-items:center; gap:7px; border:none; border-radius:var(--r-sm);
+    background:var(--green-dim); color:var(--green); font-family:var(--font-ui); font-weight:600;
+    font-size:12.5px; padding:8px 14px; cursor:pointer; border:1px solid rgba(62,207,142,.35);
+    transition:background .15s, transform .12s;
+  }
+  .btn-primary:hover{ background:rgba(62,207,142,.22); }
+  .btn-primary:active{ transform:scale(.96); }
+  .btn-primary svg{ width:13px; height:13px; }
+  .btn-primary.spin svg{ animation:spin .8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+
+  .banner{
+    display:flex; align-items:center; gap:8px; margin:14px 20px 0;
+    background:var(--green-dim); border:1px solid rgba(62,207,142,.25); color:var(--green);
+    font-size:12px; padding:9px 13px; border-radius:var(--r-sm);
+  }
+  .banner svg{width:14px; height:14px; flex-shrink:0;}
+
+  .list{ padding:8px 8px 8px; }
+  .row{
+    display:flex; align-items:center; gap:13px; padding:13px 12px; border-radius:var(--r-md);
+    cursor:pointer; transition:background .15s var(--ease);
+    animation:fadeUp .4s var(--ease) both;
+  }
+  .row:hover{ background:var(--surface-2); }
+  .avatar{
+    width:38px; height:38px; border-radius:11px; flex-shrink:0; display:flex; align-items:center;
+    justify-content:center; font-weight:700; font-size:14px;
+  }
+  .row-body{ flex:1; min-width:0; }
+  .row-top{ display:flex; align-items:baseline; gap:7px; }
+  .sender{ font-size:13.5px; font-weight:600; color:var(--ink); }
+  .subject{ font-size:13px; color:var(--ink-dim); font-weight:500; }
+  .preview{
+    font-size:12px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .row-top, .preview{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row-right{ display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0; }
+  .time{ font-family:var(--font-mono); font-size:10.5px; color:var(--muted-2); }
+  .code-chip{
+    display:flex; align-items:center; gap:6px; background:var(--amber-dim);
+    border:1px solid rgba(232,169,75,.32); border-radius:var(--r-sm); padding:5px 9px;
+    cursor:pointer; transition:background .15s, transform .1s;
+  }
+  .code-chip:hover{ background:rgba(232,169,75,.22); }
+  .code-chip:active{ transform:scale(.95); }
+  .code-chip span{ font-family:var(--font-mono); font-weight:700; font-size:12px; color:var(--amber-strong); letter-spacing:.03em; }
+  .code-chip svg{ width:12px; height:12px; color:var(--amber); }
+  .code-chip.copied{ background:var(--green-dim); border-color:rgba(62,207,142,.4); }
+  .code-chip.copied span, .code-chip.copied svg{ color:var(--green); }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span class="mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/><path d="M15 4v5h5"/></svg></span>
+      paste<span class="note">note</span>
+    </div>
+    <div class="hdr-right">
+      <span class="acct">raynardportio50055@outlook.com</span>
+      <button class="icon-btn" aria-label="Ganti tema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card" style="animation-delay:.02s">
+      <div class="card-head">
+        <div class="card-title">
+          <span class="chip green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8a2 2 0 0 1 2 2v13l-3.5-2-2.5 2-2.5-2L6 19V6a2 2 0 0 1 2-2Z"/><path d="M9 9h6M9 12.5h4"/></svg></span>
+          <h2>Notes</h2>
+        </div>
+      </div>
+      <div class="notes-body">Klik <strong style="color:var(--ink)">Read Inbox</strong> untuk melihat email masuk atau kode terbaru.</div>
+    </section>
+
+    <section class="card" style="animation-delay:.08s">
+      <div class="card-head">
+        <div class="card-title">
+          <span class="chip amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 12 14l9-5.5"/><rect x="3" y="5" width="18" height="14" rx="2.2"/></svg></span>
+          <h2>Inbox</h2>
+        </div>
+        <div class="controls">
+          <div class="switch" id="autoSwitch" role="switch" aria-checked="false" tabindex="0" aria-label="Auto refresh"><div class="thumb"></div></div>
+          <select class="interval" aria-label="Interval refresh">
+            <option>10s</option><option>30s</option><option>60s</option>
+          </select>
+          <button class="btn-primary" id="readInboxBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.36"/><path d="M21 4v5h-5"/></svg>
+            Read Inbox
+          </button>
+        </div>
+      </div>
+
+      <div class="banner">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>
+        7 pesan tersimpan (cache) &mdash; klik Read Inbox untuk melihat yang terbaru.
+      </div>
+
+      <div class="list">
+        <a class="row" href="04-dashboard-embedded.html" style="animation-delay:.05s">
+          <div class="avatar" style="background:rgba(229,98,94,.14); color:#f0908c;">A</div>
+          <div class="row-body">
+            <div class="row-top"><span class="sender">Adobe</span><span class="subject">&mdash; Kode verifikasi</span></div>
+            <div class="preview">Akun Anda tidak dapat diakses tanpa kode verifikasi ini, bahkan jika...</div>
+          </div>
+          <div class="row-right">
+            <span class="time">18h</span>
+            <div class="code-chip" data-code="473039"><span>473039</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg></div>
+          </div>
+        </a>
+        <a class="row" href="04-dashboard-embedded.html" style="animation-delay:.09s">
+          <div class="avatar" style="background:rgba(229,98,94,.14); color:#f0908c;">A</div>
+          <div class="row-body">
+            <div class="row-top"><span class="sender">Adobe Creative Cloud</span><span class="subject">&mdash; Download link paket Pro</span></div>
+            <div class="preview">Hi Raynard, selamat datang di paket Creative Cloud Pro. Ikuti langkah...</div>
+          </div>
+          <div class="row-right">
+            <span class="time">18h</span>
+          </div>
+        </a>
+        <a class="row" href="04-dashboard-embedded.html" style="animation-delay:.13s">
+          <div class="avatar" style="background:rgba(229,98,94,.14); color:#f0908c;">A</div>
+          <div class="row-body">
+            <div class="row-top"><span class="sender">Adobe</span><span class="subject">&mdash; Selamat datang di free trial!</span></div>
+            <div class="preview">Info lebih lanjut soal free trial Creative Cloud Pro kamu. Setelah...</div>
+          </div>
+          <div class="row-right">
+            <span class="time">18h</span>
+            <div class="code-chip" data-code="2026"><span>2026</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg></div>
+          </div>
+        </a>
+        <a class="row" href="04-dashboard-embedded.html" style="animation-delay:.17s">
+          <div class="avatar" style="background:rgba(147,124,229,.16); color:#b6a4f5;">C</div>
+          <div class="row-body">
+            <div class="row-top"><span class="sender">CapCut</span><span class="subject">&mdash; Permintaan reset password</span></div>
+            <div class="preview">Kami menerima permintaan untuk mengganti password akun CapCut...</div>
+          </div>
+          <div class="row-right">
+            <span class="time">1d</span>
+            <div class="code-chip" data-code="017637"><span>017637</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg></div>
+          </div>
+        </a>
+        <a class="row" href="04-dashboard-embedded.html" style="animation-delay:.21s">
+          <div class="avatar" style="background:rgba(147,124,229,.16); color:#b6a4f5;">C</div>
+          <div class="row-body">
+            <div class="row-top"><span class="sender">CapCut</span><span class="subject">&mdash; Permintaan reset password</span></div>
+            <div class="preview">Kami menerima permintaan untuk mengganti password akun CapCut...</div>
+          </div>
+          <div class="row-right">
+            <span class="time">2d</span>
+            <div class="code-chip" data-code="183675"><span>183675</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg></div>
+          </div>
+        </a>
+        <a class="row" href="04-dashboard-embedded.html" style="animation-delay:.25s">
+          <div class="avatar" style="background:rgba(147,124,229,.16); color:#b6a4f5;">C</div>
+          <div class="row-body">
+            <div class="row-top"><span class="sender">CapCut</span><span class="subject">&mdash; Selamat bergabung, ini kode kamu</span></div>
+            <div class="preview">Terima kasih sudah bergabung di CapCut! Untuk keamanan akun...</div>
+          </div>
+          <div class="row-right">
+            <span class="time">2d</span>
+            <div class="code-chip" data-code="029309"><span>029309</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg></div>
+          </div>
+        </a>
+        <a class="row" href="04-dashboard-embedded.html" style="animation-delay:.29s">
+          <div class="avatar" style="background:rgba(94,153,229,.16); color:#8fbdf5;">O</div>
+          <div class="row-body">
+            <div class="row-top"><span class="sender">Outlook Team</span><span class="subject">&mdash; Selamat datang di akun baru kamu</span></div>
+            <div class="preview">Selamat datang di Outlook! Layanan email yang membantu kamu...</div>
+          </div>
+          <div class="row-right">
+            <span class="time">Aug 4</span>
+            <div class="code-chip" data-code="98052"><span>98052</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg></div>
+          </div>
+        </a>
+      </div>
+    </section>
+  </main>
+
+<script>
+  const sw = document.getElementById('autoSwitch');
+  sw.addEventListener('click', () => {
+    const on = sw.classList.toggle('on');
+    sw.setAttribute('aria-checked', on);
+  });
+  sw.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); sw.click(); }});
+
+  const readBtn = document.getElementById('readInboxBtn');
+  readBtn.addEventListener('click', () => {
+    readBtn.classList.add('spin');
+    readBtn.disabled = true;
+    setTimeout(() => { readBtn.classList.remove('spin'); readBtn.disabled = false; }, 900);
+  });
+
+  document.querySelectorAll('.code-chip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const code = chip.dataset.code;
+      navigator.clipboard && navigator.clipboard.writeText(code).catch(()=>{});
+      const span = chip.querySelector('span');
+      const original = span.textContent;
+      chip.classList.add('copied');
+      span.textContent = 'Copied';
+      setTimeout(() => { chip.classList.remove('copied'); span.textContent = original; }, 1400);
+    });
+  });
+</script>
+</body>
+</html>

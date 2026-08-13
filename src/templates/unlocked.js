@@ -147,7 +147,8 @@ function inboxScript(email) {
         var initial=(sender[0]||'?').toUpperCase();
         var isOpen=(openIdx===i);
         var isMeta=!!metaOpen[i];
-        var codeH=code?'<div class="otp-cell"><span class="otp-code">'+h(code)+'</span><button class="copy-btn" data-c="'+h(code)+'">Copy</button></div>':'';
+        var copyIcon='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg>';
+        var codeH=code?'<span class="otp-code" data-c="'+h(code)+'"><span>'+h(code)+'</span>'+copyIcon+'</span>':'';
 
         html+='<div class="mail-item'+(isOpen?' expanded':'')+(m.isRead?' read':' unread')+'" data-i="'+i+'">'
           +'<div class="mail-row" data-i="'+i+'">'
@@ -216,12 +217,15 @@ function inboxScript(email) {
     }
 
     area.addEventListener('click',function(e){
-      var cb=e.target.closest('.copy-btn');
+      var cb=e.target.closest('.otp-code');
       if(cb){e.stopPropagation();
-        navigator.clipboard.writeText(cb.dataset.c).then(function(){
-          var o=cb.textContent;cb.textContent='OK';cb.classList.add('ok');
-          showToast('','Code "'+cb.dataset.c+'" copied');
-          setTimeout(function(){cb.textContent=o;cb.classList.remove('ok')},1500);
+        var code=cb.dataset.c;
+        navigator.clipboard.writeText(code).then(function(){
+          var sp=cb.querySelector('span');
+          var orig=sp.textContent;
+          sp.textContent='Copied';cb.classList.add('copied');
+          showToast('','Code "'+code+'" copied');
+          setTimeout(function(){sp.textContent=orig;cb.classList.remove('copied')},1400);
         });
         return;
       }
