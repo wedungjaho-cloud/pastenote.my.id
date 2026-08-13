@@ -65,7 +65,7 @@ async function handleCheckLive(request, env) {
           grant_type: 'refresh_token',
           refresh_token: refreshToken,
           client_id: clientId,
-          scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+          scope: 'https://graph.microsoft.com/Mail.ReadWrite offline_access',
         });
 
         const res = await fetch(tokenUrl, {
@@ -88,7 +88,7 @@ async function handleCheckLive(request, env) {
           username: email,
           password: password || '',
           client_id: clientId,
-          scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+          scope: 'https://graph.microsoft.com/Mail.ReadWrite offline_access',
         });
 
         const res = await fetch(tokenUrl, {
@@ -142,7 +142,7 @@ async function handleGetToken(request, env) {
         username: email,
         password: password,
         client_id: clientId,
-        scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+        scope: 'https://graph.microsoft.com/Mail.ReadWrite offline_access',
       });
 
       const res = await fetch(tokenUrl, {

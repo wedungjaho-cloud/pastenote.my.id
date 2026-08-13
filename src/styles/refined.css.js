@@ -112,6 +112,19 @@ body{background-image:radial-gradient(circle at 50% -20%,rgba(111,143,114,.08),t
 .unlocked .cd-badge{animation:none}
 .unlocked .status{border:1px solid var(--border)}
 
+/* Delete button & confirm */
+.mail-del-btn{background:none;border:none;cursor:pointer;font-size:1rem;padding:4px 6px;border-radius:6px;color:var(--t4);transition:color var(--ui-fast) var(--ui-ease),background var(--ui-fast) var(--ui-ease)}
+.mail-del-btn:hover{color:var(--red);background:var(--red-a)}
+.mail-del-confirm{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--red-a);border-radius:8px;margin:8px 16px 12px;animation:uiIn .2s var(--ui-ease) both}
+.mail-del-confirm>span{font-size:.8rem;color:var(--red);font-weight:500}
+.mail-del-actions{display:flex;gap:8px}
+.mail-del-cancel{background:transparent;border:1px solid var(--border-h);color:var(--t2);padding:5px 14px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background var(--ui-fast) var(--ui-ease),border-color var(--ui-fast) var(--ui-ease)}
+.mail-del-cancel:hover{background:var(--s4);border-color:var(--border-h)}
+.mail-del-go{background:var(--red);border:none;color:#fff;padding:5px 14px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background var(--ui-fast) var(--ui-ease),transform 80ms var(--ui-ease)}
+.mail-del-go:hover{background:#c44a32}
+.mail-del-go:active{transform:scale(.96)}
+.unlocked .mail-item.deleting{opacity:0;transform:translateX(-20px);max-height:0;padding:0;margin:0;border:0;overflow:hidden;transition:opacity .25s var(--ui-ease),transform .25s var(--ui-ease),max-height .3s .1s var(--ui-ease),padding .3s .1s var(--ui-ease),margin .3s .1s var(--ui-ease)}
+
 /* ═══════════════════════════════════════
    LANDING — editorial composition (v5.1)
    ═══════════════════════════════════════ */

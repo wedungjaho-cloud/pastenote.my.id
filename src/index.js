@@ -6,7 +6,7 @@
  */
 
 import { Router } from './router.js';
-import { handleVisitorPage, handleVerifyPassword, handleReadInbox } from './handlers/pages.js';
+import { handleVisitorPage, handleVerifyPassword, handleReadInbox, handleDeleteMessage } from './handlers/pages.js';
 import { handleAdminPage, handleAdminApi } from './handlers/admin.js';
 import { handleToolsApi } from './handlers/tools.js';
 import { renderLanding } from './templates/landing.js';
@@ -36,6 +36,7 @@ export default {
 
       if (path === '/api/verify-password' && method === 'POST') return handleVerifyPassword(request, env);
       if (path === '/api/read-inbox' && method === 'POST') return handleReadInbox(request, env);
+      if (path === '/api/delete-message' && method === 'POST') return handleDeleteMessage(request, env);
 
       if (path === '/atmin' || path === '/atmin/') return handleAdminPage(request, env, 'dashboard');
       if (path === '/atmin/login') return handleAdminPage(request, env, 'login');

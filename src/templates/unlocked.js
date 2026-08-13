@@ -91,7 +91,7 @@ function inboxScript(email) {
         area=document.getElementById('inboxArea'),sBar=document.getElementById('statusBar'),
         arT=document.getElementById('arToggle'),arI=document.getElementById('arInterval'),
         arCd=document.getElementById('arCd'),
-        loading=false,msgs=[],timer=null,cdTimer=null,cdVal=0,openIdx=-1,metaOpen={};
+        loading=false,msgs=[],timer=null,cdTimer=null,cdVal=0,openIdx=-1,metaOpen={},deleting={};
 
     var CACHE_KEY='pn_inbox_'+em;
 
@@ -173,8 +173,11 @@ function inboxScript(email) {
             +'<div class="mail-detail-right">'
             +'<span class="mail-detail-date">'+fmtDate(m.date)+'</span>'
             +(code?codeH:'')
+            +'<button class="mail-del-btn" data-del="'+i+'" title="Delete email">&#128465;</button>'
             +'</div>'
             +'</div>'
+
+            +(deleting[i]?'<div class="mail-del-confirm"><span>Delete this email permanently?</span><div class="mail-del-actions"><button class="mail-del-cancel" data-dcancel="'+i+'">Cancel</button><button class="mail-del-go" data-dgo="'+i+'">Delete</button></div></div>':'')
 
             +(isMeta?'<div class="mail-detail-meta"><table class="mail-meta-tbl">'
             +'<tr><td class="meta-k">from:</td><td class="meta-v">'+h(sender)+(m.fromEmail?' &lt;'+h(m.fromEmail)+'&gt;':'')+'</td></tr>'
@@ -230,6 +233,12 @@ function inboxScript(email) {
         render(msgs);
         return;
       }
+      var delBtn=e.target.closest('.mail-del-btn');
+      if(delBtn){e.stopPropagation();var di=parseInt(delBtn.dataset.del,10);deleting[di]=true;render(msgs);return}
+      var dcancel=e.target.closest('.mail-del-cancel');
+      if(dcancel){e.stopPropagation();var ci=parseInt(dcancel.dataset.dcancel,10);delete deleting[ci];render(msgs);return}
+      var dgo=e.target.closest('.mail-del-go');
+      if(dgo){e.stopPropagation();var gi=parseInt(dgo.dataset.dgo,10);doDelete(gi);return}
       var row=e.target.closest('.mail-row');
       if(row){
         var idx=parseInt(row.dataset.i,10);
@@ -244,12 +253,16 @@ function inboxScript(email) {
 
     function mergeMessages(newMsgs){
       if(!msgs.length){msgs=newMsgs;return}
-      var existing=new Set();
-      msgs.forEach(function(m){existing.add((m.subject||'')+'|'+(m.date||'')+'|'+(m.fromEmail||''))});
+      var existingMap={};
+      msgs.forEach(function(m,i){existingMap[(m.subject||'')+'|'+(m.date||'')+'|'+(m.fromEmail||'')]=i});
       var added=0;
       newMsgs.forEach(function(m){
         var key=(m.subject||'')+'|'+(m.date||'')+'|'+(m.fromEmail||'');
-        if(!existing.has(key)){msgs.unshift(m);added++}
+        if(key in existingMap){
+          var idx=existingMap[key];
+          if(m.id&&!msgs[idx].id)msgs[idx].id=m.id;
+          if(m.id&&msgs[idx].id!==m.id)msgs[idx].id=m.id;
+        }else{msgs.unshift(m);added++}
       });
       msgs.sort(function(a,b){return new Date(b.date||0)-new Date(a.date||0)});
       return added;
@@ -273,6 +286,36 @@ function inboxScript(email) {
         else{showSt('err',d.error||'Failed to read inbox.')}
       }catch(x){showSt('err','Error: '+x.message)}
       finally{loading=false;readBtn.disabled=false;readBtn.querySelector('.btn-text').textContent='Read Inbox';readBtn.querySelector('.btn-loader').style.display='none'}
+    }
+
+    async function doDelete(idx){
+      var m=msgs[idx];
+      if(!m||!m.id){showToast('','Cannot delete: no message ID');return}
+      var item=document.querySelector('.mail-item[data-i="'+idx+'"]');
+      if(item)item.classList.add('deleting');
+      try{
+        var r=await fetch('/api/delete-message',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,messageId:m.id})});
+        var d=await r.json();
+        if(d.success){
+          msgs.splice(idx,1);
+          delete deleting[idx];
+          if(openIdx===idx)openIdx=-1;
+          else if(openIdx>idx)openIdx--;
+          saveCache();
+          setTimeout(function(){render(msgs)},280);
+          showToast('','Email deleted');
+        }else{
+          if(item)item.classList.remove('deleting');
+          delete deleting[idx];
+          render(msgs);
+          showToast('',d.error||'Delete failed');
+        }
+      }catch(x){
+        if(item)item.classList.remove('deleting');
+        delete deleting[idx];
+        render(msgs);
+        showToast('','Error: '+x.message);
+      }
     }
     readBtn.addEventListener('click',doRead);
 

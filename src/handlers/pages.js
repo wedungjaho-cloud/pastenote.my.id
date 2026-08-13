@@ -1,7 +1,7 @@
 /**
  * ═══════════════════════════════════════════════════════════
  *  PasteNote — Visitor Page Handlers
- *  Handles: /{email}, /api/verify-password, /api/read-inbox
+ *  Handles: /{email}, /api/verify-password, /api/read-inbox, /api/delete-message
  * ═══════════════════════════════════════════════════════════
  */
 
@@ -187,7 +187,7 @@ async function refreshOAuth2Token(refreshToken, clientId) {
     grant_type: 'refresh_token',
     refresh_token: refreshToken,
     client_id: clientId,
-    scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+    scope: 'https://graph.microsoft.com/Mail.ReadWrite offline_access',
   });
 
   const response = await fetch(tokenUrl, {
@@ -216,7 +216,7 @@ async function fetchInbox(accessToken) {
   const graphUrl = 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages'
     + '?$top=15'
     + '&$orderby=receivedDateTime desc'
-    + '&$select=subject,from,receivedDateTime,bodyPreview,body,isRead';
+    + '&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead';
 
   const response = await fetch(graphUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -229,6 +229,7 @@ async function fetchInbox(accessToken) {
   }
 
   return (data.value || []).map(msg => ({
+    id: msg.id || '',
     subject: msg.subject || '(No Subject)',
     from: msg.from?.emailAddress?.name || '',
     fromEmail: msg.from?.emailAddress?.address || '',
@@ -249,4 +250,77 @@ function parseCookies(cookieHeader) {
       return [key, val.join('=')];
     })
   );
+}
+
+
+// ─── POST /api/delete-message — Hard delete email via Graph API ──
+
+export async function handleDeleteMessage(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body || !body.email || !body.messageId) {
+    return Router.jsonResponse({ success: false, error: 'Email and messageId are required' }, 400);
+  }
+
+  const { email, messageId } = body;
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+
+  // Validate session
+  const cookieHeader = request.headers.get('Cookie') || '';
+  const cookies = parseCookies(cookieHeader);
+  const sessionToken = cookies['pn_session'];
+  const session = await validateSession(env.KV, sessionToken, email);
+
+  if (!session) {
+    return Router.jsonResponse({ success: false, error: 'Session not valid. Please login again.' }, 401);
+  }
+
+  // Check page exists and inbox is enabled
+  const page = await getPage(env.KV, email);
+  if (!page) {
+    return Router.jsonResponse({ success: false, error: 'Page not found' }, 404);
+  }
+  if (!page.inbox_enabled) {
+    return Router.jsonResponse({ success: false, error: 'Inbox is disabled for this page' }, 403);
+  }
+
+  // Rate limit — 1 delete per 2 seconds
+  const limited = await isRateLimited(env.KV, email + ':del', ip, 2000);
+  if (limited) {
+    return Router.jsonResponse({ success: false, error: 'Too fast. Wait 2 seconds between deletes.' }, 429);
+  }
+
+  // Get config & refresh token
+  const config = await getConfig(env.KV, email, env.ENCRYPTION_KEY);
+  if (!config) {
+    return Router.jsonResponse({ success: false, error: 'Email config not set by admin' }, 404);
+  }
+
+  let accessToken;
+  try {
+    const tokenResult = await refreshOAuth2Token(config.refresh_token, config.client_id);
+    accessToken = tokenResult.access_token;
+    if (tokenResult.refresh_token && tokenResult.refresh_token !== config.refresh_token) {
+      await updateRefreshToken(env.KV, email, tokenResult.refresh_token, env.ENCRYPTION_KEY);
+    }
+  } catch (err) {
+    return Router.jsonResponse({ success: false, error: `Token refresh failed: ${err.message}` }, 502);
+  }
+
+  // Delete message via Graph API
+  try {
+    const delRes = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${encodeURIComponent(messageId)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (delRes.status === 204 || delRes.status === 200) {
+      return Router.jsonResponse({ success: true });
+    }
+
+    const errData = await delRes.json().catch(() => ({}));
+    const errMsg = errData.error?.message || `Graph API error: ${delRes.status}`;
+    return Router.jsonResponse({ success: false, error: errMsg }, delRes.status >= 400 ? delRes.status : 502);
+  } catch (err) {
+    return Router.jsonResponse({ success: false, error: `Delete failed: ${err.message}` }, 502);
+  }
 }
