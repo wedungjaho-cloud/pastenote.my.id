@@ -1,17 +1,14 @@
 export function getRefinedCSS() {
   return `
 /* ═══════════════════════════════════════
-   PasteNote — Refined Visual Layer v5.2
-   Merged: v5.1 landing + ui-revamp admin/visitor polish
+   PasteNote — Refined Visual Layer v6.0
+   "Cipher Obsidian" — atmospheric depth, vault-borders, noise grain
    ═══════════════════════════════════════ */
 :root{
   --ui-ease:cubic-bezier(.22,.61,.36,1);
   --ui-fast:140ms;
   --ui-base:220ms;
 }
-
-/* Subtle ambient gradient */
-body{background-image:radial-gradient(circle at 50% -20%,rgba(111,143,114,.08),transparent 40%)}
 
 /* ═══════════════════════════════════════
    HEADER
@@ -22,52 +19,61 @@ body{background-image:radial-gradient(circle at 50% -20%,rgba(111,143,114,.08),t
 .theme-btn:active{transform:scale(.96)}
 
 /* ═══════════════════════════════════════
-   NAV PILLS (admin tabs)
+   NAV PILLS (admin tabs) — minimal underline-style
    ═══════════════════════════════════════ */
 .nav-pills{background:transparent;border:0;padding:0;gap:4px}
 .nav-pill{padding:7px 13px;border-radius:8px;color:var(--t3);transition:background var(--ui-fast) var(--ui-ease),color var(--ui-fast) var(--ui-ease)}
 .nav-pill:hover{background:var(--s3);color:var(--t1)}
-.nav-pill.active{background:var(--s3);color:var(--t1);box-shadow:none}
+.nav-pill.active{background:var(--s3);color:var(--forest);box-shadow:none;border:1px solid var(--forest-a)}
 
 /* ═══════════════════════════════════════
-   CARD — softer, cleaner
+   CARD — vault-border, tonal stacking
    ═══════════════════════════════════════ */
-.card{border-radius:14px;box-shadow:0 1px 1px rgba(0,0,0,.08);transition:border-color var(--ui-base) var(--ui-ease),background var(--ui-base) var(--ui-ease),box-shadow var(--ui-base) var(--ui-ease),transform var(--ui-base) var(--ui-ease)}
-.card:hover{border-color:var(--border-h);box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.card{border-radius:14px;box-shadow:none;transition:border-color var(--ui-base) var(--ui-ease),background var(--ui-base) var(--ui-ease)}
+.card:hover{border-color:var(--border-h);box-shadow:none}
 .card-icon,.card:hover .card-icon{transform:none;transition:background var(--ui-base) var(--ui-ease),color var(--ui-base) var(--ui-ease)}
 
 /* ═══════════════════════════════════════
-   BUTTONS — refined motion
+   BUTTONS — ghost primary refinement
    ═══════════════════════════════════════ */
-.btn{transition:background var(--ui-fast) var(--ui-ease),border-color var(--ui-fast) var(--ui-ease),color var(--ui-fast) var(--ui-ease),transform 100ms var(--ui-ease),opacity var(--ui-fast) var(--ui-ease)}
+.btn{transition:background var(--ui-fast) var(--ui-ease),border-color var(--ui-fast) var(--ui-ease),color var(--ui-fast) var(--ui-ease),transform 100ms var(--ui-ease),opacity var(--ui-fast) var(--ui-ease),box-shadow var(--ui-fast) var(--ui-ease)}
 .btn:hover{box-shadow:none}
 .btn:active{transform:translateY(1px) scale(.985)}
 .btn-p{font-weight:600}
+.btn-p:hover{box-shadow:var(--glow)}
 
 /* ═══════════════════════════════════════
-   INPUT — smooth transitions
+   INPUT — vault input dark
    ═══════════════════════════════════════ */
 .inp{transition:border-color var(--ui-fast) var(--ui-ease),background var(--ui-fast) var(--ui-ease),box-shadow var(--ui-fast) var(--ui-ease)}
 
 /* ═══════════════════════════════════════
-   LOCKED & ADMIN LOGIN — entry animation
+   LOCKED & ADMIN LOGIN — glass panel entry
    ═══════════════════════════════════════ */
 .locked .lock-card,.admin-login .alogin-card{box-shadow:none;animation:uiIn .55s var(--ui-ease) both}
 .lock-card:hover,.alogin-card:hover{box-shadow:0 14px 36px rgba(0,0,0,.14)}
-.lock-card{max-width:400px}
+.lock-card{max-width:420px}
 .lock-icon{animation:uiPulse 2.8s ease-in-out infinite}
 .lock-card:hover .lock-icon{animation:none}
-.alogin-card{border-top:2px solid var(--amber)}
+.alogin-card{border-top:2px solid var(--forest)}
 .nf-card{animation:uiIn .55s var(--ui-ease) both}
 .nf-code{opacity:.6}
 
+/* Glass panel effect for lock screens */
+.lock-card,.alogin-card{
+  background:rgba(28,27,27,.4) !important;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--border) !important;
+}
+
 /* ═══════════════════════════════════════
-   ADMIN DASHBOARD — polished data view
+   ADMIN DASHBOARD — vault-border data view
    ═══════════════════════════════════════ */
 .admin-dash .page{padding-top:88px}
 .admin-dash .stats{grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
 .admin-dash .stat{position:relative;padding:16px 18px;border-radius:12px;background:transparent;box-shadow:none;transition:background var(--ui-base) var(--ui-ease),border-color var(--ui-base) var(--ui-ease),transform var(--ui-base) var(--ui-ease)}
-.admin-dash .stat:hover{transform:translateY(-2px);background:var(--s2);box-shadow:0 10px 24px rgba(0,0,0,.12)}
+.admin-dash .stat:hover{transform:translateY(-2px);background:var(--s2);box-shadow:none}
 .admin-dash .stat:nth-child(1),.admin-dash .stat:nth-child(2),.admin-dash .stat:nth-child(3){border-left:1px solid var(--border-h)}
 .admin-dash .stat-num{font-size:1.9rem;letter-spacing:-.04em}
 .admin-dash .stat-name{font-size:.63rem}
@@ -76,7 +82,7 @@ body{background-image:radial-gradient(circle at 50% -20%,rgba(111,143,114,.08),t
 .admin-dash .tbl{min-width:720px;border-spacing:0 4px}
 .admin-dash .tbl thead th{background:transparent;border:0;padding:8px 12px;color:var(--t4);font-size:.61rem}
 .admin-dash .tbl tbody tr{background:transparent;transition:background var(--ui-fast) var(--ui-ease),transform var(--ui-fast) var(--ui-ease)}
-.admin-dash .tbl tbody tr:hover{background:var(--s3);transform:translateX(2px)}
+.admin-dash .tbl tbody tr:hover{background:rgba(255,255,255,.03);transform:translateX(2px)}
 .admin-dash .tbl tbody td{border-top:1px solid transparent;border-bottom:1px solid transparent;padding:12px}
 .admin-dash .tbl tbody tr:hover td{border-color:var(--border)}
 .admin-dash .tbl-link,.admin-dash .tbl tbody td:nth-child(3){font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--forest)}
@@ -85,10 +91,10 @@ body{background-image:radial-gradient(circle at 50% -20%,rgba(111,143,114,.08),t
 .admin-dash .tab{animation:uiTab .25s var(--ui-ease) both}
 
 /* ═══════════════════════════════════════
-   UNLOCKED — visitor inbox polish
+   UNLOCKED — visitor vault inbox
    ═══════════════════════════════════════ */
 .unlocked .page{max-width:1040px}
-.unlocked .card{border-radius:16px}
+.unlocked .card{border-radius:14px}
 .unlocked .note-text{font-size:1rem;line-height:1.85;max-width:780px}
 .unlocked .card-header{padding:15px 18px}
 .unlocked .card-body{padding:18px}
@@ -96,16 +102,16 @@ body{background-image:radial-gradient(circle at 50% -20%,rgba(111,143,114,.08),t
 .unlocked .mail-item{background:transparent;border-bottom:1px solid var(--border);transition:background var(--ui-fast) var(--ui-ease),border-color var(--ui-fast) var(--ui-ease)}
 .unlocked .mail-item:last-child{border-bottom:0}
 .unlocked .mail-row{min-height:68px;padding:13px 16px;transition:background var(--ui-fast) var(--ui-ease),padding-left var(--ui-fast) var(--ui-ease)}
-.unlocked .mail-row:hover{background:var(--s3);padding-left:20px}
+.unlocked .mail-row:hover{background:rgba(255,255,255,.03);padding-left:20px}
 .unlocked .mail-row.unread{background:transparent}
 .unlocked .mail-row.unread .mail-sender,.unlocked .mail-row.unread .mail-subj{font-weight:700}
-.unlocked .mail-avatar{width:34px;height:34px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.unlocked .mail-avatar{width:34px;height:34px;border-radius:8px}
 .unlocked .mail-right{opacity:.9;transition:opacity var(--ui-fast) var(--ui-ease),transform var(--ui-fast) var(--ui-ease)}
 .unlocked .mail-row:hover .mail-right{opacity:1;transform:translateX(-2px)}
-.unlocked .otp-code{background:var(--s3);border:1px solid var(--border);color:var(--amber);padding:5px 9px;transition:background var(--ui-fast) var(--ui-ease),border-color var(--ui-fast) var(--ui-ease),color var(--ui-fast) var(--ui-ease)}
-.unlocked .otp-code:hover{transform:none;background:var(--amber-a);border-color:var(--amber);color:var(--amber-h)}
+.unlocked .otp-code{background:#2a2318;border:1px solid rgba(251,192,45,.18);color:var(--amber);padding:5px 9px;transition:background var(--ui-fast) var(--ui-ease),border-color var(--ui-fast) var(--ui-ease),color var(--ui-fast) var(--ui-ease)}
+.unlocked .otp-code:hover{transform:none;background:rgba(251,192,45,.15);border-color:var(--amber);color:var(--amber-h)}
 .unlocked .copy-btn{border-color:var(--border);transition:background var(--ui-fast) var(--ui-ease),color var(--ui-fast) var(--ui-ease)}
-.unlocked .mail-item.expanded{margin:4px 0;background:var(--s3);border:1px solid var(--border-h);box-shadow:0 10px 28px rgba(0,0,0,.12)}
+.unlocked .mail-item.expanded{margin:4px 0;background:var(--s3);border:1px solid var(--border-h);box-shadow:none}
 .unlocked .mail-detail{animation:mailOpen .28s var(--ui-ease) both;padding-top:2px}
 .unlocked .mail-detail-meta{animation:metaOpen .22s var(--ui-ease) both}
 .unlocked .inbox-empty{padding:54px 24px}
@@ -114,18 +120,18 @@ body{background-image:radial-gradient(circle at 50% -20%,rgba(111,143,114,.08),t
 
 /* Delete button & confirm */
 .mail-del-btn{display:inline-flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;cursor:pointer;padding:5px;border-radius:6px;color:var(--t4);transition:color var(--ui-fast) var(--ui-ease),background var(--ui-fast) var(--ui-ease),border-color var(--ui-fast) var(--ui-ease);margin-left:6px}
-.mail-del-btn:hover{color:var(--red);background:var(--red-a);border-color:rgba(212,101,74,.15)}
+.mail-del-btn:hover{color:var(--red);background:var(--red-a);border-color:rgba(255,180,171,.15)}
 .mail-del-confirm{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--s4);border:1px solid var(--border-h);border-radius:10px;margin:10px 16px 12px;animation:uiIn .18s var(--ui-ease) both}
 .mail-del-confirm>span{font-size:.78rem;color:var(--t2);font-weight:500;flex:1}
 .mail-del-confirm>svg{color:var(--red)}
 .mail-del-actions{display:flex;gap:6px;flex-shrink:0}
 .mail-del-cancel{font-family:inherit}
 .mail-del-go{background:var(--red)!important;border:none!important;color:#fff!important;font-family:inherit}
-.mail-del-go:hover{background:#c44a32!important}
+.mail-del-go:hover{background:#b33b30!important}
 .unlocked .mail-item.deleting{opacity:0;transform:translateX(-16px);max-height:0;padding:0;margin:0;border:0;overflow:hidden;transition:opacity .22s var(--ui-ease),transform .22s var(--ui-ease),max-height .28s .08s var(--ui-ease),padding .28s .08s var(--ui-ease),margin .28s .08s var(--ui-ease)}
 
 /* ═══════════════════════════════════════
-   LANDING — editorial composition (v5.1)
+   LANDING — editorial composition v6.0
    ═══════════════════════════════════════ */
 .landing-shell{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px 56px}
 .landing-panel{width:min(720px,100%);padding:clamp(18px,4vw,42px) 0 0}
@@ -145,15 +151,41 @@ body{background-image:radial-gradient(circle at 50% -20%,rgba(111,143,114,.08),t
 .landing-url{font-family:'JetBrains Mono',monospace;font-size:clamp(.78rem,1.8vw,.88rem);color:var(--t3);padding:14px 0 22px;overflow:auto;white-space:nowrap}
 .landing-url strong{color:var(--forest);font-weight:600}
 .landing-rule{height:1px;background:var(--border);margin-bottom:2px}
-.landing-step{display:grid;grid-template-columns:42px 1fr;gap:8px;padding:15px 0;border-bottom:1px solid var(--border);transition:padding-left var(--ui-base) var(--ui-ease)}
+.landing-step{display:grid;grid-template-columns:42px 1fr;gap:8px;padding:15px 0;border-bottom:1px solid var(--border);transition:padding-left var(--ui-base) var(--ui-ease),background var(--ui-fast) var(--ui-ease)}
 .landing-step:last-child{border-bottom:0}
-.landing-step>span{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--forest);padding-top:3px}
+.landing-step>span{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--forest);padding-top:3px;opacity:.6}
 .landing-step p{font-size:.86rem;color:var(--t2);line-height:1.5;margin:0}
-.landing-step:hover{padding-left:5px}
+.landing-step:hover{padding-left:5px;background:rgba(255,255,255,.02)}
 .landing-footnote{font-size:.72rem;color:var(--t4);margin-top:22px;opacity:0;animation:uiIn .7s .2s var(--ui-ease) forwards}
 .landing-foot{margin-top:48px;padding-top:20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;opacity:0;animation:uiIn .7s .26s var(--ui-ease) forwards}
 .landing-foot-dot{width:5px;height:5px;border-radius:50%;background:var(--forest);opacity:.5}
 .landing-foot-text{font-size:.68rem;color:var(--t4);letter-spacing:.04em}
+
+/* ═══════════════════════════════════════
+   LIGHT MODE — override body bg art
+   ═══════════════════════════════════════ */
+[data-theme="light"] body{
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(0,109,62,.04) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+}
+[data-theme="light"] .lock-card,[data-theme="light"] .alogin-card{
+  background:rgba(255,255,255,.65) !important;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+}
+[data-theme="light"] .unlocked .mail-avatar{border:1px solid var(--border-h)}
+[data-theme="light"] .unlocked .otp-code{background:rgba(138,105,0,.06);border-color:rgba(138,105,0,.15)}
+
+/* ═══════════════════════════════════════
+   SCROLLBAR — premium
+   ═══════════════════════════════════════ */
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}
+[data-theme="light"] ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.12)}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,.2)}
 
 /* ═══════════════════════════════════════
    ANIMATIONS

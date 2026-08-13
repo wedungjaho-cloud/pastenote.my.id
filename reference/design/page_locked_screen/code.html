@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Page Locked</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#57f1db",
+                      "on-secondary-container": "#b7b5b4",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "outline-variant": "#3e4a40",
+                      "primary-fixed": "#8ff8b4",
+                      "on-error": "#690005",
+                      "primary-container": "#86efac",
+                      "tertiary": "#d6fff6",
+                      "on-tertiary-fixed-variant": "#005047",
+                      "surface-tint": "#73db9a",
+                      "on-surface-variant": "#bdcabe",
+                      "on-primary-fixed": "#00210f",
+                      "surface-bright": "#3a3939",
+                      "surface": "#131313",
+                      "secondary-fixed": "#e5e2e1",
+                      "secondary": "#c8c6c5",
+                      "surface-container-highest": "#353534",
+                      "surface-container-lowest": "#0e0e0e",
+                      "primary-fixed-dim": "#73db9a",
+                      "surface-container-low": "#1c1b1b",
+                      "on-primary-container": "#006d3e",
+                      "on-surface": "#e5e2e1",
+                      "inverse-primary": "#006d3e",
+                      "surface-container": "#201f1f",
+                      "on-secondary": "#313030",
+                      "outline": "#889489",
+                      "on-primary": "#00391d",
+                      "on-secondary-fixed": "#1c1b1b",
+                      "on-tertiary-fixed": "#00201c",
+                      "inverse-surface": "#e5e2e1",
+                      "secondary-container": "#474746",
+                      "surface-variant": "#353534",
+                      "error": "#ffb4ab",
+                      "inverse-on-surface": "#313030",
+                      "on-background": "#e5e2e1",
+                      "surface-container-high": "#2a2a2a",
+                      "background": "#131313",
+                      "on-secondary-fixed-variant": "#474746",
+                      "tertiary-fixed-dim": "#3cddc7",
+                      "tertiary-fixed": "#62fae3",
+                      "surface-dim": "#131313",
+                      "primary": "#dbffe2",
+                      "on-primary-fixed-variant": "#00522d",
+                      "on-tertiary-container": "#006b60",
+                      "on-error-container": "#ffdad6",
+                      "error-container": "#93000a",
+                      "on-tertiary": "#003731"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-md": "16px",
+                      "section-gap": "64px",
+                      "container-max": "800px",
+                      "stack-sm": "8px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "code-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg": [
+                              "Hanken Grotesk"
+                      ],
+                      "body-md": [
+                              "Hanken Grotesk"
+                      ],
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "display": [
+                              "Hanken Grotesk"
+                      ],
+                      "headline-lg-mobile": [
+                              "Hanken Grotesk"
+                      ]
+              },
+              "fontSize": {
+                      "code-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-caps": [
+                              "11px",
+                              {
+                                      "lineHeight": "1.0",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: #131313;
+            color: #e5e2e1;
+        }
+        
+        .glass-panel {
+            background: rgba(28, 27, 27, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .input-glow:focus {
+            box-shadow: 0 0 0 1px rgba(134, 239, 172, 0.5);
+            border-color: rgba(134, 239, 172, 1);
+        }
+        
+        .btn-glow {
+            box-shadow: 0 0 20px rgba(134, 239, 172, 0.15);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-background">
+<div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(circle at 50% 0%, rgba(134, 239, 172, 0.15), transparent 50%);"></div>
+<main class="w-full max-w-[440px] z-10">
+<div class="glass-panel rounded-xl p-8 flex flex-col items-center">
+<div class="w-14 h-14 bg-surface-container-highest rounded-xl flex items-center justify-center mb-6 border border-white/5">
+<span class="material-symbols-outlined text-primary-container" style="font-size: 28px;">lock</span>
+</div>
+<div class="text-center mb-8 w-full">
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">Page Locked</h1>
+<p class="font-code-sm text-code-sm text-on-surface-variant truncate w-full" title="elodietobias41763@outlook.com">elodietobias41763@outlook.com</p>
+</div>
+<form action="#" class="w-full space-y-4" method="POST" onsubmit="event.preventDefault();">
+<div>
+<label class="sr-only" for="password">Password</label>
+<div class="relative">
+<input class="block w-full bg-[#050505] border border-white/10 rounded font-code-sm text-code-sm text-on-surface px-4 py-3 placeholder:text-on-surface-variant/50 focus:outline-none input-glow transition-all duration-200" id="password" name="password" placeholder="Password" required="" type="password"/>
+</div>
+</div>
+<button class="w-full bg-primary-container/10 border border-primary-container text-primary-container hover:bg-primary-container/20 font-body-md text-body-md py-3 px-4 rounded btn-glow transition-all duration-200 flex items-center justify-center" type="submit">
+                    Unlock
+                </button>
+</form>
+</div>
+</main>
+</body></html>

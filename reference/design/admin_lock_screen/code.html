@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>pastenote - Admin Lock</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#353534",
+                        "tertiary-container": "#57f1db",
+                        "background": "#131313",
+                        "secondary": "#c8c6c5",
+                        "outline-variant": "#3e4a40",
+                        "tertiary-fixed-dim": "#3cddc7",
+                        "on-tertiary": "#003731",
+                        "secondary-fixed": "#e5e2e1",
+                        "surface-container-highest": "#353534",
+                        "on-surface": "#e5e2e1",
+                        "inverse-on-surface": "#313030",
+                        "error": "#ffb4ab",
+                        "on-tertiary-container": "#006b60",
+                        "secondary-container": "#474746",
+                        "on-secondary": "#313030",
+                        "tertiary-fixed": "#62fae3",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#474746",
+                        "on-primary-fixed-variant": "#00522d",
+                        "on-background": "#e5e2e1",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface": "#131313",
+                        "primary-container": "#86efac",
+                        "on-primary": "#00391d",
+                        "tertiary": "#d6fff6",
+                        "inverse-surface": "#e5e2e1",
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed": "#00201c",
+                        "on-tertiary-fixed-variant": "#005047",
+                        "primary-fixed-dim": "#73db9a",
+                        "on-primary-container": "#006d3e",
+                        "on-surface-variant": "#bdcabe",
+                        "on-secondary-container": "#b7b5b4",
+                        "outline": "#889489",
+                        "inverse-primary": "#006d3e",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "primary-fixed": "#8ff8b4",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-container": "#201f1f",
+                        "surface-dim": "#131313",
+                        "on-primary-fixed": "#00210f",
+                        "primary": "#dbffe2",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-tint": "#73db9a",
+                        "on-error": "#690005",
+                        "surface-bright": "#3a3939",
+                        "surface-container-low": "#1c1b1b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px",
+                        "container-max": "800px",
+                        "section-gap": "64px"
+                    },
+                    "fontFamily": {
+                        "display": ["Hanken Grotesk"],
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-md": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "display": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700" }],
+                        "code-sm": ["13px", { "lineHeight": "1.4", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "label-caps": ["11px", { "lineHeight": "1.0", "letterSpacing": "0.1em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "letterSpacing": "0.01em", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+            /* Subtle dark mesh gradient overlay */
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.05) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.05) 0, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .glass-panel {
+            background: rgba(18, 18, 18, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        
+        .input-dark {
+            background-color: #050505;
+            border: 1px solid transparent;
+            transition: border-color 0.2s ease;
+        }
+        
+        .input-dark:focus {
+            border-color: rgba(134, 239, 172, 0.5); /* Primary container / Sage green */
+            outline: none;
+            box-shadow: none;
+        }
+
+        .primary-glow-btn {
+            background-color: rgba(134, 239, 172, 0.1);
+            border: 1px solid rgba(134, 239, 172, 0.5);
+            color: theme('colors.primary-container');
+            box-shadow: 0 0 15px rgba(134, 239, 172, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .primary-glow-btn:hover {
+            background-color: rgba(134, 239, 172, 0.2);
+            box-shadow: 0 0 20px rgba(134, 239, 172, 0.15);
+        }
+
+        /* Nav suppressed for transactional flow, keeping structural elements to align with instructions if absolutely needed, but logic dictates suppression for lock screen. We will use a minimal brand anchor. */
+    </style>
+</head>
+<body class="font-body-md antialiased selection:bg-primary-container/30 selection:text-primary-container">
+<!-- TopNavBar (Minimalist version for lock screen - technically suppressed per logic, but brand anchor remains) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter py-4 h-16 bg-background/70 backdrop-blur-md border-b border-white/5">
+<div class="font-display text-xl font-bold text-on-surface">pastenote</div>
+<!-- Nav links suppressed for transactional lock screen -->
+<div class="flex items-center gap-4">
+<button class="text-primary hover:bg-white/5 transition-colors duration-200 p-2 rounded scale-95 active:opacity-80 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="wb_sunny">wb_sunny</span>
+</button>
+</div>
+</header>
+<!-- Main Content: Focused Center Layout -->
+<main class="flex-grow flex items-center justify-center px-gutter pt-section-gap pb-section-gap mt-16">
+<div class="w-full max-w-[400px]">
+<div class="glass-panel rounded-xl p-8 flex flex-col items-center text-center">
+<!-- Lock Icon -->
+<div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center mb-6 border border-white/5">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant" data-icon="lock" style="font-variation-settings: 'FILL' 0, 'wght' 300;">lock</span>
+</div>
+<!-- Headers -->
+<h1 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2 tracking-tight">Vault Locked</h1>
+<p class="font-code-sm text-code-sm text-on-surface-variant mb-8 opacity-70">Authentication required to access admin workspace.</p>
+<!-- Form -->
+<form class="w-full flex flex-col gap-stack-md" onsubmit="event.preventDefault(); document.getElementById('unlock-btn').classList.add('opacity-50', 'cursor-wait'); setTimeout(() =&gt; window.location.reload(), 800);">
+<div class="flex flex-col gap-stack-sm text-left w-full">
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest ml-1" for="admin-pin">Master Key</label>
+<input autocomplete="current-password" class="input-dark w-full px-4 py-3 rounded-DEFAULT font-code-sm text-code-sm text-on-surface placeholder-on-surface-variant/30" id="admin-pin" placeholder="••••••••" required="" type="password"/>
+</div>
+<button class="primary-glow-btn w-full py-3 rounded-DEFAULT font-label-caps text-label-caps uppercase tracking-widest mt-4 flex items-center justify-center gap-2" id="unlock-btn" type="submit">
+<span class="material-symbols-outlined text-sm" data-icon="key">key</span>
+                        Unlock
+                    </button>
+</form>
+</div>
+<!-- Contextual helper -->
+<div class="mt-8 text-center w-full">
+<a class="font-code-sm text-code-sm text-on-surface-variant/50 hover:text-on-surface transition-colors duration-200 inline-block border-b border-transparent hover:border-white/20 pb-0.5" href="#">Emergency Recovery</a>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full border-t border-white/5 mt-auto">
+<div class="max-w-container-max mx-auto px-gutter py-8 flex justify-between items-center opacity-70 hover:opacity-100 transition-opacity">
+<span class="font-code-sm text-code-sm text-on-surface-variant">pastenote · private note space</span>
+<a class="font-code-sm text-code-sm text-on-surface-variant hover:text-on-surface transition-colors duration-200" href="#">Admin-issued link</a>
+</div>
+</footer>
+</body></html>

@@ -1,9 +1,9 @@
 /**
  * ═══════════════════════════════════════════════════════════
- *  PasteNote — Design System v4 (Awwwards-grade)
- *  Font: Inter Variable (single family, weight 400-700)
- *  Palette: Sage #BFC6C4 · Cream #E8E2D8 · Forest #6F8F72 · Amber #F2A65A
- *  Motion: cubic-bezier easing, 200-300ms, purposeful micro-interactions
+ *  PasteNote — Design System v6 "Cipher Obsidian"
+ *  Font: Inter + JetBrains Mono
+ *  Palette: Obsidian · Sage #86EFAC · Amber #FBC02D · Surface tiers
+ *  Identity: Private Vault — atmospheric depth, vault-borders, noise grain
  * ═══════════════════════════════════════════════════════════
  */
 
@@ -19,47 +19,48 @@ const CSS = `
    DARK THEME
    ═══════════════════════════════════════ */
 :root,[data-theme="dark"]{
-  /* Surface — near-black */
-  --s0:#0a0a09;  /* deepest bg */
-  --s1:#0f0f0e;  /* page bg */
-  --s2:#161614;  /* card bg */
-  --s3:#1c1c19;  /* raised */
-  --s4:#242421;  /* hover */
-  --s5:#2e2e2a;  /* active */
+  /* Surface tiers — Cipher Obsidian ink-black */
+  --s0:#0e0e0e;  /* deepest / container-lowest */
+  --s1:#131313;  /* page bg / background */
+  --s2:#1c1b1b;  /* card bg / surface-container-low */
+  --s3:#201f1f;  /* raised / surface-container */
+  --s4:#2a2a2a;  /* hover / surface-container-high */
+  --s5:#353534;  /* active / surface-container-highest */
 
-  /* Text — cream tones */
-  --t1:#E8E2D8;  /* primary */
-  --t2:#BFC6C4;  /* secondary — sage */
-  --t3:#8a8e8c;  /* muted */
-  --t4:#5d615f;  /* disabled */
+  /* Text — on-surface tones */
+  --t1:#e5e2e1;  /* primary — on-surface */
+  --t2:#bdcabe;  /* secondary — on-surface-variant (sage tint) */
+  --t3:#889489;  /* muted — outline */
+  --t4:#3e4a40;  /* disabled — outline-variant */
 
   /* Palette */
-  --sage:#BFC6C4;
-  --cream:#E8E2D8;
-  --forest:#6F8F72;
-  --forest-h:#82a385;
-  --forest-a:rgba(111,143,114,.12);
-  --amber:#F2A65A;
-  --amber-h:#f5b46e;
-  --amber-a:rgba(242,166,90,.10);
+  --sage:#86efac;  /* primary-container — Sage Green accent */
+  --cream:#e5e2e1;
+  --forest:#86efac;  /* now sage green = primary-container */
+  --forest-h:#73db9a; /* primary-fixed-dim */
+  --forest-a:rgba(134,239,172,.10);
+  --amber:#fbc02d;
+  --amber-h:#f9d54e;
+  --amber-a:rgba(251,192,45,.10);
 
   /* Semantic */
-  --red:#D4654A;
-  --red-a:rgba(212,101,74,.10);
+  --red:#ffb4ab;
+  --red-a:rgba(255,180,171,.08);
 
   /* Surface utils */
-  --border:rgba(191,198,196,.06);
-  --border-h:rgba(191,198,196,.12);
-  --glass:rgba(10,10,9,.88);
-  --on-forest:#0a0a09;
-  --on-amber:#0a0a09;
+  --border:rgba(255,255,255,.06);
+  --border-h:rgba(255,255,255,.12);
+  --glass:rgba(19,19,19,.80);
+  --on-forest:#00391d;
+  --on-amber:#1a1400;
 
-  /* Elevation */
-  --sh1:0 1px 2px rgba(0,0,0,.3);
-  --sh2:0 4px 12px rgba(0,0,0,.25);
-  --sh3:0 8px 30px rgba(0,0,0,.35);
-  --sh4:0 16px 48px rgba(0,0,0,.4);
-  --focus:0 0 0 2px var(--forest),0 0 0 4px var(--forest-a);
+  /* Elevation — minimal (tonal stacking, not shadows) */
+  --sh1:none;
+  --sh2:0 2px 8px rgba(0,0,0,.2);
+  --sh3:0 4px 16px rgba(0,0,0,.25);
+  --sh4:0 8px 32px rgba(0,0,0,.3);
+  --focus:0 0 0 1px var(--forest),0 0 0 3px var(--forest-a);
+  --glow:0 0 20px rgba(134,239,172,.15);
 
   color-scheme:dark;
 }
@@ -68,41 +69,42 @@ const CSS = `
    LIGHT THEME
    ═══════════════════════════════════════ */
 [data-theme="light"]{
-  --s0:#EDE9E3;
-  --s1:#F5F2ED;
-  --s2:#FFFFFF;
-  --s3:#FFFFFF;
-  --s4:#F0EDE7;
-  --s5:#E8E4DE;
+  --s0:#e5e2e1;  /* inverse-surface */
+  --s1:#f2f0ee;  /* light page bg */
+  --s2:#fafaf9;  /* card bg */
+  --s3:#ffffff;  /* raised */
+  --s4:#f0edea;  /* hover */
+  --s5:#e5e2e1;  /* active */
 
-  --t1:#1a1a17;
-  --t2:#4a4d4b;
-  --t3:#7a7d7b;
-  --t4:#a0a3a1;
+  --t1:#1c1b1b;  /* on-secondary-fixed */
+  --t2:#474746;  /* on-secondary-fixed-variant */
+  --t3:#6e6e6d;  /* muted */
+  --t4:#9a9a99;  /* disabled */
 
-  --sage:#9a9f9d;
-  --cream:#F5F2ED;
-  --forest:#4A7A4E;
-  --forest-h:#3d6940;
-  --forest-a:rgba(74,122,78,.08);
-  --amber:#D4872E;
-  --amber-h:#c07a28;
-  --amber-a:rgba(212,135,46,.08);
+  --sage:#006d3e;  /* inverse-primary */
+  --cream:#f2f0ee;
+  --forest:#006d3e;  /* inverse-primary */
+  --forest-h:#00522d;
+  --forest-a:rgba(0,109,62,.08);
+  --amber:#8a6900;
+  --amber-h:#705500;
+  --amber-a:rgba(138,105,0,.08);
 
-  --red:#C14532;
-  --red-a:rgba(193,69,50,.06);
+  --red:#93000a;
+  --red-a:rgba(147,0,10,.06);
 
-  --border:rgba(42,42,38,.06);
-  --border-h:rgba(42,42,38,.12);
-  --glass:rgba(245,242,237,.88);
+  --border:rgba(28,27,27,.08);
+  --border-h:rgba(28,27,27,.14);
+  --glass:rgba(242,240,238,.88);
   --on-forest:#fff;
   --on-amber:#fff;
 
-  --sh1:0 1px 2px rgba(0,0,0,.04);
-  --sh2:0 4px 12px rgba(0,0,0,.05);
-  --sh3:0 8px 30px rgba(0,0,0,.06);
-  --sh4:0 16px 48px rgba(0,0,0,.08);
-  --focus:0 0 0 2px var(--forest),0 0 0 4px var(--forest-a);
+  --sh1:0 1px 3px rgba(0,0,0,.05);
+  --sh2:0 4px 12px rgba(0,0,0,.06);
+  --sh3:0 8px 24px rgba(0,0,0,.07);
+  --sh4:0 12px 36px rgba(0,0,0,.08);
+  --focus:0 0 0 1px var(--forest),0 0 0 3px var(--forest-a);
+  --glow:0 0 16px rgba(0,109,62,.12);
 
   color-scheme:light;
 }
@@ -125,6 +127,10 @@ html{font-size:16px;scroll-behavior:smooth}
 body{
   font-family:'Inter',system-ui,-apple-system,sans-serif;
   background:var(--s1);
+  background-image:
+    radial-gradient(ellipse at 50% 0%, rgba(134,239,172,.04) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-attachment:fixed;
   color:var(--t1);
   line-height:1.5;
   min-height:100vh;
@@ -329,9 +335,9 @@ h3,.h3{font-size:1rem;font-weight:600;line-height:1.4}
 .btn:hover::after{opacity:.06}
 .btn:active{transform:scale(.97);transition-duration:80ms}
 
-/* Primary — forest green */
-.btn-p{background:var(--forest);color:var(--on-forest)}
-.btn-p:hover{background:var(--forest-h);box-shadow:0 2px 12px var(--forest-a)}
+/* Primary — ghost sage green with glow */
+.btn-p{background:var(--forest-a);color:var(--forest);border:1px solid rgba(134,239,172,.35)}
+.btn-p:hover{background:rgba(134,239,172,.18);box-shadow:var(--glow)}
 
 /* Accent — amber */
 .btn-a{background:var(--amber);color:var(--on-amber)}
@@ -369,13 +375,13 @@ h3,.h3{font-size:1rem;font-weight:600;line-height:1.4}
 .inp{
   width:100%;font-family:inherit;font-size:.9375rem;
   color:var(--t1);background:var(--s0);
-  border:1px solid var(--border);border-radius:10px;
+  border:1px solid transparent;border-radius:10px;
   padding:10px 14px;outline:none;
   transition:all var(--dur) var(--ease);
 }
 .inp::placeholder{color:var(--t4)}
 .inp:hover{border-color:var(--border-h)}
-.inp:focus{border-color:var(--forest);box-shadow:var(--focus);background:var(--s1)}
+.inp:focus{border-color:var(--forest);box-shadow:0 0 0 1px rgba(134,239,172,.4);background:var(--s0)}
 
 .inp-ta{resize:vertical;min-height:90px;line-height:1.6}
 .inp-mono{font-family:'JetBrains Mono',monospace;font-size:.8125rem}
@@ -576,9 +582,9 @@ h3,.h3{font-size:1rem;font-weight:600;line-height:1.4}
 .lock-card:hover{border-color:var(--border-h);box-shadow:var(--sh3)}
 
 .lock-icon{
-  width:48px;height:48px;margin:0 auto 18px;
+  width:56px;height:56px;margin:0 auto 18px;
   display:flex;align-items:center;justify-content:center;
-  background:var(--forest-a);border-radius:14px;color:var(--forest);
+  background:var(--s5);border:1px solid var(--border);border-radius:14px;color:var(--t2);
   transition:transform var(--dur-slow) var(--ease-spring);
 }
 .lock-card:hover .lock-icon{transform:scale(1.08) rotate(-3deg)}
@@ -626,16 +632,16 @@ h3,.h3{font-size:1rem;font-weight:600;line-height:1.4}
 .mail-row.unread:hover{background:var(--s4)}
 
 .mail-avatar{
-  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  width:36px;height:36px;border-radius:8px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  font-weight:700;font-size:.875rem;color:#fff;
-  background:var(--forest);text-transform:uppercase;
+  font-weight:700;font-size:.875rem;
+  text-transform:uppercase;
 }
-.mail-avatar.a1{background:#6F8F72}
-.mail-avatar.a2{background:#7B8FA1}
-.mail-avatar.a3{background:#A17B6F}
-.mail-avatar.a4{background:#8F6FA1}
-.mail-avatar.a5{background:#6F9FA1}
+.mail-avatar.a1{background:#4a5d4e;color:#a5d6a7;border:1px solid rgba(165,214,167,.3)}
+.mail-avatar.a2{background:#3b4754;color:#90caf9;border:1px solid rgba(144,202,249,.3)}
+.mail-avatar.a3{background:#5d4642;color:#ffab91;border:1px solid rgba(255,171,145,.3)}
+.mail-avatar.a4{background:#453754;color:#ce93d8;border:1px solid rgba(206,147,216,.3)}
+.mail-avatar.a5{background:#4a5347;color:#a5d6a7;border:1px solid rgba(165,214,167,.3)}
 
 .mail-body{flex:1;min-width:0;overflow:hidden}
 .mail-top{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
@@ -653,8 +659,8 @@ h3,.h3{font-size:1rem;font-weight:600;line-height:1.4}
 .otp-cell{display:flex;align-items:center;gap:4px}
 .otp-code{
   font-family:'JetBrains Mono',monospace;font-size:.8125rem;font-weight:700;
-  color:var(--amber);background:var(--amber-a);
-  padding:4px 10px;border-radius:6px;
+  color:var(--amber);background:#2a2318;
+  padding:4px 10px;border-radius:6px;border:1px solid rgba(251,192,45,.18);
   letter-spacing:.02em;white-space:nowrap;
   transition:transform var(--dur) var(--ease-spring);
 }
