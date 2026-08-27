@@ -238,7 +238,7 @@ function normalizeInboxMessage(msg) {
     subject: msg.subject || msg.Subject || '(No Subject)',
     from: msg.from?.emailAddress?.name || msg.From?.EmailAddress?.Name || '',
     fromEmail: msg.from?.emailAddress?.address || msg.From?.EmailAddress?.Address || '',
-    date: msg.receivedDateTime || msg.DateTimeReceived || msg.createdDateTime || msg.DateTimeCreated || '',
+    date: msg.receivedDateTime || msg.ReceivedDateTime || msg.createdDateTime || msg.CreatedDateTime || '',
     preview: msg.bodyPreview || msg.BodyPreview || '',
     body: msg.body?.content || msg.Body?.Content || '',
     isRead: (msg.isRead !== undefined) ? msg.isRead : ((msg.IsRead !== undefined) ? msg.IsRead : false),
@@ -253,7 +253,7 @@ async function fetchInbox(accessToken, mode = 'graph') {
 
   const outlookEp = {
     type: 'outlook',
-    url: 'https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=15&$orderby=DateTimeReceived desc&$select=Id,Subject,From,DateTimeReceived,BodyPreview,Body,IsRead'
+    url: 'https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=15&$orderby=ReceivedDateTime desc&$select=Id,Subject,From,ReceivedDateTime,BodyPreview,Body,IsRead'
   };
   const graphEp = {
     type: 'graph',

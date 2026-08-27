@@ -370,7 +370,7 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
 
     const outlookEp = {
       type: 'outlook',
-      url: `https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=${searchLimit}&$orderby=DateTimeReceived desc&$select=Id,Subject,From,DateTimeReceived,BodyPreview,Body,IsRead`
+      url: `https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=${searchLimit}&$orderby=ReceivedDateTime desc&$select=Id,Subject,From,ReceivedDateTime,BodyPreview,Body,IsRead`
     };
     const graphEp = {
       type: 'graph',
@@ -427,7 +427,7 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
       const subj = msg.subject || msg.Subject || '(No Subject)';
       const fromName = msg.from?.emailAddress?.name || msg.From?.EmailAddress?.Name || '';
       const fromAddr = msg.from?.emailAddress?.address || msg.From?.EmailAddress?.Address || '';
-      const date = msg.receivedDateTime || msg.DateTimeReceived || msg.createdDateTime || msg.DateTimeCreated || '';
+      const date = msg.receivedDateTime || msg.ReceivedDateTime || msg.createdDateTime || msg.CreatedDateTime || '';
       const prev = msg.bodyPreview || msg.BodyPreview || '';
       const content = msg.body?.content || msg.Body?.Content || '';
       const otp = extractOtpCode(subj, prev, content);
