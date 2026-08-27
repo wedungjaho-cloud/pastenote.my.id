@@ -7,9 +7,7 @@
 
 import { Router } from '../router.js';
 import { getPage, getConfig, updateRefreshToken, validateSession, createSession, verifyPagePassword, isRateLimited, checkBruteForce, recordFailedAttempt, clearFailedAttempts, getGlobalSettings, hasConfig } from '../utils/kv.js';
-import { renderLocked } from '../templates/locked.js';
-import { renderUnlocked } from '../templates/unlocked.js';
-import { renderNotFound } from '../templates/notfound.js';
+import { renderLocked, renderUnlocked, renderNotFound } from '../lib/render.js';
 
 // ─── GET /{email} — Render visitor page ──────────────────────
 

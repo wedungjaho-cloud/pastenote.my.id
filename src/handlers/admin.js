@@ -13,8 +13,7 @@ import {
   checkBruteForce, recordFailedAttempt, clearFailedAttempts,
   invalidateSessionsForEmail, getConfig,
 } from '../utils/kv.js';
-import { renderAdminLogin } from '../templates/admin/login.js';
-import { renderAdminDashboard } from '../templates/admin/dashboard.js';
+import { renderAdminLogin, renderAdminDashboard } from '../lib/render.js';
 
 // ─── Admin Page Rendering ────────────────────────────────────
 

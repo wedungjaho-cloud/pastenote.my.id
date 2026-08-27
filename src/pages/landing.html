@@ -1,0 +1,375 @@
+<main class="landing-shell" id="landingShell">
+  <!-- Dynamic Ambient Mouse Spotlight -->
+  <div class="landing-ambient-spotlight" id="ambientSpotlight"></div>
+
+  <div class="landing-panel">
+
+    <!-- Left Column: Hero Editorial & Value Prop -->
+    <section class="landing-hero">
+      <div class="landing-kicker-wrap spring-pop" style="--d:1" id="kickerWrap">
+        <span class="live-pulse" aria-hidden="true"></span>
+        <span class="landing-kicker">ENCRYPTED NOTE & INBOX VAULT</span>
+      </div>
+
+      <div class="landing-copy">
+        <h1 class="landing-title vault-enter" style="--d:2" id="heroTitle" title="Hover or touch to decrypt phrase">
+          <span id="heroLine1">Your notes, quietly</span><br>
+          <em id="heroLine2">kept in one place.</em>
+        </h1>
+        <p class="landing-lede vault-enter" style="--d:3" id="heroLede" title="Hover or touch to decrypt description">
+          PasteNote is an isolated, link-based private space. No tracking, no feeds, no public directory — accessible only with your secret assigned access key.
+        </p>
+      </div>
+
+      <!-- Feature Highlight Badges -->
+      <div class="landing-features vault-enter" style="--d:5">
+        <div class="feat-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span class="badge-label">AES-256 Encrypted</span>
+        </div>
+        <div class="feat-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <span class="badge-label">Live Inbox Stream</span>
+        </div>
+        <div class="feat-badge">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span class="badge-label">Zero Knowledge</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Interactive Vault Simulator & Access Guide -->
+    <aside class="landing-aside">
+
+      <!-- Interactive Live Preview Widget (Vault Simulator) -->
+      <div class="demo-card spotlight-card vault-enter" style="--d:4" id="demoVaultCard">
+        <div class="demo-header">
+          <div class="demo-title-wrap">
+            <span class="demo-dot"></span>
+            <span class="demo-title">Interactive Vault Simulator</span>
+          </div>
+          <span class="demo-status" id="demoStatusTag">LOCKED</span>
+        </div>
+
+        <div class="demo-body">
+          <!-- Locked View (Initial) -->
+          <div class="demo-view" id="demoLockedView">
+            <div class="demo-url-box">
+              <span class="demo-domain">pastenote.my.id/</span><strong class="demo-slug">alex.smith@outlook.com</strong>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="demo-presets">
+              <span class="demo-preset-label">Demo Keys:</span>
+              <button type="button" class="preset-chip" data-key="demo123">demo123</button>
+              <button type="button" class="preset-chip" data-key="vault-key">vault-key</button>
+              <button type="button" class="preset-chip" data-key="private-88">private-88</button>
+            </div>
+
+            <div class="demo-input-row">
+              <input type="password" id="demoKeyInput" class="inp inp-pw demo-input" placeholder="Type access key..." value="demo123">
+              <button id="btnDemoUnlock" class="btn btn-p demo-btn">
+                <span class="btn-text">Unlock</span>
+              </button>
+            </div>
+            <p class="demo-hint">Click <strong>Unlock</strong> to preview decrypted state</p>
+          </div>
+
+          <!-- Unlocked View (After Decrypt) -->
+          <div class="demo-view" id="demoUnlockedView" style="display:none">
+            <div class="demo-unlocked-header">
+              <div class="demo-user-tag">alex.smith@outlook.com</div>
+              <button id="btnDemoLock" class="btn btn-g btn-sm" style="height:26px;font-size:11px">Lock</button>
+            </div>
+
+            <div class="demo-note-box">
+              <div class="demo-box-label">PRIVATE NOTE</div>
+              <p id="demoNoteText">Credentials updated for Adobe CC & Figma Workspace. Next sync scheduled at 18:00 UTC.</p>
+            </div>
+
+            <div class="demo-mail-item">
+              <div class="demo-avatar">A</div>
+              <div class="demo-mail-body">
+                <div class="demo-mail-top">
+                  <span class="demo-sender">Adobe Identity</span>
+                  <span class="demo-time">just now</span>
+                </div>
+                <div class="demo-subject">Verification code: <strong>839201</strong></div>
+              </div>
+              <div class="demo-otp-chip" id="demoOtpChip" data-code="839201" title="Click to copy">
+                <span>839201</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3-Step Access Protocol -->
+      <div class="landing-access spotlight-card vault-enter" style="--d:6">
+        <div class="landing-access-head">
+          <span class="label">ACCESS PROTOCOL</span>
+          <span class="landing-access-note">Direct Link Architecture</span>
+        </div>
+
+        <div class="landing-step">
+          <span class="step-num">01</span>
+          <div class="step-content">
+            <strong>Open Private URL</strong>
+            <p>Access the unique endpoint assigned by your administrator.</p>
+          </div>
+        </div>
+
+        <div class="landing-step">
+          <span class="step-num">02</span>
+          <div class="step-content">
+            <strong>Enter Vault Key</strong>
+            <p>Decrypt with your designated password or global access key.</p>
+          </div>
+        </div>
+
+        <div class="landing-step">
+          <span class="step-num">03</span>
+          <div class="step-content">
+            <strong>Instant Stream Access</strong>
+            <p>Read encrypted notes and stream incoming verification codes in real time.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="landing-footnote">No link or password? Public registrations are permanently closed.</p>
+    </aside>
+
+    <!-- Full-Width Bottom Bar -->
+    <footer class="landing-foot vault-enter" style="--d:7">
+      <span class="landing-foot-dot" aria-hidden="true"></span>
+      <span class="landing-foot-text">pastenote · zero-noise encrypted workspace</span>
+    </footer>
+
+  </div>
+</main>
+
+<script>
+/* ══ PasteNote Landing: Vault Boot Sequence + Smooth Scrambler ══ */
+(function(){
+  var shell = document.getElementById('landingShell');
+  var heroTitle = document.getElementById('heroTitle');
+  var heroLine1 = document.getElementById('heroLine1');
+  var heroLine2 = document.getElementById('heroLine2');
+  var heroLede = document.getElementById('heroLede');
+
+  /* ── Motion Config ── */
+  var EASE_EXPO = function(t){ return 1 - Math.pow(1 - t, 2); }; /* quadratic ease-out: gradual, not rushed */
+  var GLYPHS = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  var TITLE_DUR  = 2800;  /* ms — headline scramble (slow, cinematic) */
+  var LEDE_DUR   = 3200;  /* ms — description scramble */
+
+  /* ── Height Lock: measure real rendered height, then freeze box ──
+     After this, the element's external size is 100% fixed.
+     Internal text changes (scrambler) cannot push siblings. */
+  function lockBox(el) {
+    if (!el) return;
+    var h = el.getBoundingClientRect().height;
+    el.style.height = h + 'px';
+    el.style.contain = 'strict';
+  }
+
+  /* ── Data: 10 Headlines + 10 Descriptions ── */
+  var headlines = [
+    { l1: 'Your notes, quietly', l2: 'kept in one place.' },
+    { l1: 'Encrypted thoughts,', l2: 'kept in silence.' },
+    { l1: 'Zero tracking.', l2: 'Pure private memory.' },
+    { l1: 'Private stream,', l2: 'shielded by design.' },
+    { l1: 'Secret vault,', l2: 'streaming real-time.' },
+    { l1: 'No public trails.', l2: 'Only your key.' },
+    { l1: 'Stealth workspace,', l2: 'locked behind links.' },
+    { l1: 'Minimalist refuge', l2: 'for sensitive notes.' },
+    { l1: 'Uncluttered space,', l2: 'secured end-to-end.' },
+    { l1: 'Isolated inbox,', l2: 'guarded in secret.' }
+  ];
+
+  var descriptions = [
+    'PasteNote is an isolated, link-based private space. No tracking, no feeds, no public directory \u2014 accessible only with your secret assigned access key.',
+    'Engineered for zero surveillance. Store encrypted credentials and stream incoming verification codes in an isolated, distraction-free sanctuary.',
+    'No algorithmic feeds, no profile pages, and no public registry. Your notes exist solely inside their cryptographic container behind a private link.',
+    'A lightweight vault for developer tokens, passcodes, and incoming OTPs. Simple direct access with instantaneous real-time sync across devices.',
+    'Built on zero-knowledge architecture. No tracking cookies or telemetry \u2014 just your secure endpoint and designated private decryption key.',
+    'Real-time inbox forwarding meets encrypted markdown notes. Engineered specifically for high-security isolation and rapid secret retrieval.',
+    'Keep critical access keys, sensitive credentials, and verification codes in one private compartment, decoupled from public directories.',
+    'Designed for stealth workflows. Direct-link architecture ensures your workspace remains invisible to search engines and web crawlers.',
+    'A quiet digital compartment for rapid copy-pasting, multi-device handoffs, and instant 2FA message streaming without public exposure.',
+    'Private by default, secure by design. Instant access from any device with unmatched cryptographic speed and complete operational isolation.'
+  ];
+
+  var currentHeadlineIdx = 0;
+  var currentLedeIdx = 0;
+
+  function randIdx(max, cur) {
+    var n; do { n = Math.floor(Math.random() * max); } while (n === cur && max > 1); return n;
+  }
+
+  /* ── Core Scrambler: single textContent write per rAF frame ── */
+  function scramble(el, target, dur, done) {
+    if (el._rid) cancelAnimationFrame(el._rid);
+    var len = target.length;
+    var t0 = 0;
+
+    function tick(ts) {
+      if (!t0) t0 = ts;
+      var p = Math.min((ts - t0) / dur, 1);
+      var solved = Math.floor(EASE_EXPO(p) * len);
+      var buf = '';
+      for (var i = 0; i < len; i++) {
+        if (i < solved) {
+          buf += target[i];
+        } else {
+          var c = target[i];
+          buf += (c === ' ' || c === '.' || c === ',' || c === '\u2014' || c === ':' || c === ';')
+            ? c : GLYPHS[(Math.random() * 36) | 0];
+        }
+      }
+      el.textContent = buf;
+      if (p < 1) {
+        el._rid = requestAnimationFrame(tick);
+      } else {
+        el.textContent = target;
+        el._rid = 0;
+        if (done) done();
+      }
+    }
+    el._rid = requestAnimationFrame(tick);
+  }
+
+  /* ── 1. Headline hover/touch scrambler ── */
+  var titleLock = false;
+  function doTitle() {
+    if (titleLock) return;
+    titleLock = true;
+    currentHeadlineIdx = randIdx(headlines.length, currentHeadlineIdx);
+    var h = headlines[currentHeadlineIdx];
+    scramble(heroLine1, h.l1, TITLE_DUR, function(){});
+    scramble(heroLine2, h.l2, TITLE_DUR + 100, function(){ titleLock = false; });
+  }
+  if (heroTitle) {
+    heroTitle.addEventListener('mouseenter', doTitle);
+    heroTitle.addEventListener('touchstart', doTitle, { passive: true });
+  }
+
+  /* ── 2. Description hover/touch scrambler ── */
+  var ledeLock = false;
+  function doLede() {
+    if (ledeLock) return;
+    ledeLock = true;
+    currentLedeIdx = randIdx(descriptions.length, currentLedeIdx);
+    scramble(heroLede, descriptions[currentLedeIdx], LEDE_DUR, function(){ ledeLock = false; });
+  }
+  if (heroLede) {
+    heroLede.addEventListener('mouseenter', doLede);
+    heroLede.addEventListener('touchstart', doLede, { passive: true });
+  }
+
+  /* ── 3. Ambient spotlight (RAF-throttled, scoped to #ambientSpotlight) ── */
+  var spot = document.getElementById('ambientSpotlight');
+  if (spot) {
+    var pending = false;
+    window.addEventListener('mousemove', function(e){
+      if (!pending) {
+        pending = true;
+        requestAnimationFrame(function(){
+          spot.style.setProperty('--mouse-screen-x', ((e.clientX / window.innerWidth) * 100) + '%');
+          spot.style.setProperty('--mouse-screen-y', ((e.clientY / window.innerHeight) * 100) + '%');
+          pending = false;
+        });
+      }
+    }, { passive: true });
+
+    document.querySelectorAll('.spotlight-card').forEach(function(card){
+      card.addEventListener('mousemove', function(e){
+        var r = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', (e.clientX - r.left) + 'px');
+        card.style.setProperty('--mouse-y', (e.clientY - r.top) + 'px');
+      }, { passive: true });
+    });
+  }
+
+  /* ── 4. ENTRANCE: Vault Boot Sequence ──
+     1) Lock heights so scrambler can never push siblings
+     2) Add .booted to trigger CSS entrance animations
+     3) Run decrypt-reveal scramble on headline + description */
+  requestAnimationFrame(function(){
+    /* Lock boxes BEFORE any animation starts */
+    lockBox(heroTitle);
+    lockBox(heroLede);
+
+    shell.classList.add('booted');
+
+    /* Decrypt-reveal: headline scrambles from random glyphs to real text */
+    setTimeout(function(){
+      scramble(heroLine1, headlines[0].l1, 2000, function(){});
+      scramble(heroLine2, headlines[0].l2, 2200, function(){});
+    }, 300);
+
+    /* Decrypt-reveal: description scrambles in after headline */
+    setTimeout(function(){
+      scramble(heroLede, descriptions[0], 2500, function(){});
+    }, 550);
+  });
+
+  /* ── 5. Simulator Presets & Unlock/Lock ── */
+  var btnUnlock = document.getElementById('btnDemoUnlock');
+  var btnLock = document.getElementById('btnDemoLock');
+  var keyInput = document.getElementById('demoKeyInput');
+  var lockedView = document.getElementById('demoLockedView');
+  var unlockedView = document.getElementById('demoUnlockedView');
+  var statusTag = document.getElementById('demoStatusTag');
+  var otpChip = document.getElementById('demoOtpChip');
+
+  document.querySelectorAll('.preset-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      if (keyInput) { keyInput.value = chip.dataset.key; keyInput.focus(); }
+    });
+  });
+
+  if (btnUnlock && btnLock) {
+    btnUnlock.addEventListener('click', function(){
+      var key = keyInput.value.trim();
+      if (!key) { keyInput.focus(); return; }
+      btnUnlock.disabled = true;
+      btnUnlock.innerHTML = '<span class="spinner" style="width:12px;height:12px;border-width:1.5px"></span>';
+
+      setTimeout(function(){
+        lockedView.style.display = 'none';
+        unlockedView.style.display = 'block';
+        statusTag.textContent = 'DECRYPTED';
+        statusTag.classList.add('active');
+        btnUnlock.disabled = false;
+        btnUnlock.innerHTML = '<span class="btn-text">Unlock</span>';
+        if (window.showToast) window.showToast('', 'Vault decrypted: Sample note & inbox stream loaded');
+      }, 320);
+    });
+
+    btnLock.addEventListener('click', function(){
+      unlockedView.style.display = 'none';
+      lockedView.style.display = 'block';
+      statusTag.textContent = 'LOCKED';
+      statusTag.classList.remove('active');
+    });
+  }
+
+  /* ── 6. OTP Copy ── */
+  if (otpChip) {
+    otpChip.addEventListener('click', function(e){
+      e.stopPropagation();
+      var code = otpChip.dataset.code;
+      navigator.clipboard.writeText(code).then(function(){
+        var sp = otpChip.querySelector('span');
+        var orig = sp.textContent;
+        sp.textContent = 'Copied';
+        otpChip.classList.add('copied');
+        if (window.showToast) window.showToast('', 'Code ' + code + ' copied to clipboard');
+        setTimeout(function(){ sp.textContent = orig; otpChip.classList.remove('copied'); }, 1400);
+      });
+    });
+  }
+})();
+</script>

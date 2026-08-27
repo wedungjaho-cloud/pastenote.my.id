@@ -345,6 +345,63 @@ Dapatkan refresh_token dari email+password via ROPC grant.
 
 ---
 
+### `POST /api/tools/search-inbox`
+
+Test pembacaan inbox via Microsoft Graph API dan pencarian pesan spesifik (berdasarkan Subject dan/atau Email Pengirim/Sender). Mendukung input akun tunggal maupun bulk dengan batching concurrency.
+
+**Request Body:**
+```json
+{
+  "credentials": "email|password|refresh_token|client_id\n...",
+  "subjectFilter": "Test Message",
+  "senderFilter": "admin@domain.com",
+  "searchLimit": 15
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "summary": {
+    "total": 10,
+    "live": 9,
+    "canRead": 9,
+    "matchFound": 4,
+    "noMatch": 5,
+    "failed": 1
+  },
+  "results": [
+    {
+      "email": "test@outlook.com",
+      "live": true,
+      "canRead": true,
+      "matchFound": true,
+      "matchedCount": 1,
+      "totalInbox": 15,
+      "matches": [
+        {
+          "id": "AAMkAG...",
+          "subject": "Test Message Inbox",
+          "from": "Admin",
+          "fromEmail": "admin@domain.com",
+          "date": "2026-08-27T10:00:00Z",
+          "preview": "Your test verification code is 849201",
+          "bodySnippet": "...",
+          "isRead": false,
+          "otp": "849201"
+        }
+      ],
+      "latestMessage": { ... },
+      "error": null,
+      "rawLine": "test@outlook.com|..."
+    }
+  ]
+}
+```
+
+---
+
 ## Static Assets
 
 ### `GET /assets/main.css`

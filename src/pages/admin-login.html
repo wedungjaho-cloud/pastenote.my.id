@@ -1,0 +1,69 @@
+<div class="page-center">
+  <div class="alogin-card fade-up">
+    <div class="alogin-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px;color:var(--green)">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+    </div>
+    <h1 class="alogin-title">Admin</h1>
+    <p class="alogin-sub">PasteNote Management</p>
+
+    <!-- LOGIN FORM -->
+    <form id="loginForm" onsubmit="return false">
+      <div class="field" style="margin-bottom:12px">
+        <input type="password" id="adminPw" class="inp" placeholder="Password" autocomplete="current-password" autofocus required>
+        <button type="button" id="toggleAdminPwBtn" class="eye-btn" title="Toggle password visibility">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="adminEyeIcon">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <button type="submit" id="loginBtn" class="btn btn-full">
+        <span class="btn-text">Login</span>
+        <span class="btn-loader" style="display:none"><span class="spinner"></span></span>
+      </button>
+    </form>
+    <div class="forgot-link" style="margin-top:14px;text-align:center"><a href="#" id="forgotBtn" style="font-size:12px;color:var(--muted);text-decoration:underline">Forgot password?</a></div>
+
+    <!-- FORGOT STEP 1: REQUEST CODE -->
+    <div id="forgotPanel" style="display:none">
+      <p class="alogin-desc" style="font-size:12.5px;color:var(--muted);margin-bottom:14px">A recovery code will be sent to the admin's configured email.</p>
+      <button id="sendCodeBtn" class="btn btn-s" style="width:100%;height:44px">
+        <span class="btn-text">Send Code</span>
+        <span class="btn-loader" style="display:none"><span class="spinner"></span></span>
+      </button>
+      <div style="margin-top:14px;text-align:center"><a href="#" id="backToLogin" style="font-size:12px;color:var(--muted)">Back to login</a></div>
+    </div>
+
+    <!-- FORGOT STEP 2: ENTER CODE -->
+    <div id="codePanel" style="display:none">
+      <p class="alogin-desc" style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Enter the 6-digit code sent to your recovery email.</p>
+      <div class="inp-group" style="margin-bottom:12px">
+        <input type="text" id="recoveryCode" class="inp inp-mono" placeholder="______" maxlength="6" style="text-align:center;font-size:1.25rem;letter-spacing:0.5rem">
+      </div>
+      <button id="verifyCodeBtn" class="btn btn-full">
+        <span class="btn-text">Verify Code</span>
+        <span class="btn-loader" style="display:none"><span class="spinner"></span></span>
+      </button>
+      <div style="margin-top:14px;text-align:center"><a href="#" id="backToLogin2" style="font-size:12px;color:var(--muted)">Back to login</a></div>
+    </div>
+
+    <!-- FORGOT STEP 3: SET NEW PASSWORD -->
+    <div id="resetPanel" style="display:none">
+      <p class="alogin-desc" style="font-size:12.5px;color:var(--muted);margin-bottom:14px">Create a new secure password.</p>
+      <div class="inp-group" style="margin-bottom:12px"><input type="password" id="newPw" class="inp" placeholder="New password"></div>
+      <div class="inp-group" style="margin-bottom:12px"><input type="password" id="confirmPw" class="inp" placeholder="Confirm password"></div>
+      <button id="resetPwBtn" class="btn btn-full">
+        <span class="btn-text">Change Password</span>
+        <span class="btn-loader" style="display:none"><span class="spinner"></span></span>
+      </button>
+    </div>
+
+    <!-- ERROR/SUCCESS -->
+    <div id="loginMsg" class="err-msg" style="display:none;margin-top:14px;font-size:12px;color:var(--red);align-items:center;gap:6px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span class="msg-text"></span>
+    </div>
+  </div>
+</div>
+

@@ -28,6 +28,9 @@ export async function handleToolsApi(request, env, path, method) {
   if (path === '/api/tools/get-token' && method === 'POST') {
     return handleGetToken(request, env);
   }
+  if (path === '/api/tools/search-inbox' && method === 'POST') {
+    return handleSearchInbox(request, env);
+  }
 
   return Router.jsonResponse({ error: 'Tool not found' }, 404);
 }
@@ -169,6 +172,308 @@ async function handleGetToken(request, env) {
 }
 
 
+// ─── Search Inbox — Test read inbox & search specific messages ─
+
+async function handleSearchInbox(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body || !body.credentials) {
+    return Router.jsonResponse({ success: false, error: 'Credentials wajib diisi' }, 400);
+  }
+
+  const rawLines = body.credentials.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const subjectFilter = (body.subjectFilter || '').trim();
+  const senderFilter = (body.senderFilter || '').trim();
+  const searchLimit = Math.min(Math.max(parseInt(body.searchLimit, 10) || 15, 1), 30);
+
+  const results = [];
+  const chunkSize = 5; // Concurrency limit to prevent hitting subrequest/rate limits
+
+  for (let i = 0; i < rawLines.length; i += chunkSize) {
+    const chunk = rawLines.slice(i, i + chunkSize);
+    const chunkPromises = chunk.map(line => searchSingleAccountInbox(line, subjectFilter, senderFilter, searchLimit));
+    const chunkResults = await Promise.all(chunkPromises);
+    results.push(...chunkResults);
+  }
+
+  const summary = {
+    total: results.length,
+    live: results.filter(r => r.live).length,
+    canRead: results.filter(r => r.canRead).length,
+    matchFound: results.filter(r => r.matchFound).length,
+    noMatch: results.filter(r => r.canRead && !r.matchFound).length,
+    failed: results.filter(r => !r.canRead).length,
+  };
+
+  return Router.jsonResponse({ success: true, summary, results });
+}
+
+async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, searchLimit) {
+  // Normalize line: support tab-separated and pipe-separated
+  let line = rawLine;
+  if (line.includes('\t')) {
+    const tabParts = line.split('\t').map(p => p.trim()).filter(Boolean);
+    const foundPipe = tabParts.find(p => p.includes('|') && p.includes('@'));
+    if (foundPipe) line = foundPipe;
+  }
+  if (line.endsWith('$')) line = line.slice(0, -1);
+
+  const parts = line.split('|');
+  const email = parts[0]?.trim();
+  const password = parts[1]?.trim();
+  const refreshToken = parts[2]?.trim();
+  const clientId = parts[3]?.trim() || '9e5f94bc-e8a4-4e73-b8be-63364c29d753';
+
+  if (!email || !email.includes('@')) {
+    return {
+      email: email || rawLine,
+      live: false,
+      canRead: false,
+      matchFound: false,
+      matchedCount: 0,
+      totalInbox: 0,
+      matches: [],
+      latestMessage: null,
+      error: 'Format tidak valid. Gunakan: email|password|refresh_token|client_id',
+      rawLine,
+    };
+  }
+
+  try {
+    // 1. Get access token
+    let accessToken = null;
+    let newRefreshToken = null;
+
+    if (refreshToken) {
+      // Try refresh_token grant
+      const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
+      const tokenBody = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: clientId,
+        scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+      });
+
+      const tokenRes = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: tokenBody.toString(),
+      });
+
+      const tokenData = await tokenRes.json();
+      if (tokenData.access_token) {
+        accessToken = tokenData.access_token;
+        newRefreshToken = tokenData.refresh_token || refreshToken;
+      } else {
+        return {
+          email,
+          live: false,
+          canRead: false,
+          matchFound: false,
+          matchedCount: 0,
+          totalInbox: 0,
+          matches: [],
+          latestMessage: null,
+          error: tokenData.error_description || tokenData.error || 'Refresh token invalid/expired',
+          rawLine,
+        };
+      }
+    } else if (password) {
+      // Fallback: try ROPC (password grant)
+      const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
+      const tokenBody = new URLSearchParams({
+        grant_type: 'password',
+        username: email,
+        password: password,
+        client_id: clientId,
+        scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+      });
+
+      const tokenRes = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: tokenBody.toString(),
+      });
+
+      const tokenData = await tokenRes.json();
+      if (tokenData.access_token) {
+        accessToken = tokenData.access_token;
+        newRefreshToken = tokenData.refresh_token || null;
+      } else {
+        return {
+          email,
+          live: false,
+          canRead: false,
+          matchFound: false,
+          matchedCount: 0,
+          totalInbox: 0,
+          matches: [],
+          latestMessage: null,
+          error: tokenData.error_description || tokenData.error || 'Password auth failed',
+          rawLine,
+        };
+      }
+    } else {
+      return {
+        email,
+        live: false,
+        canRead: false,
+        matchFound: false,
+        matchedCount: 0,
+        totalInbox: 0,
+        matches: [],
+        latestMessage: null,
+        error: 'Tidak ada refresh_token atau password untuk autentikasi',
+        rawLine,
+      };
+    }
+
+    // 2. Fetch inbox messages from Microsoft Graph API
+    const graphUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=${searchLimit}&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead`;
+    const graphRes = await fetch(graphUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    const graphData = await graphRes.json();
+
+    if (!graphRes.ok) {
+      return {
+        email,
+        live: true,
+        canRead: false,
+        matchFound: false,
+        matchedCount: 0,
+        totalInbox: 0,
+        matches: [],
+        latestMessage: null,
+        error: graphData.error?.message || `Graph API error (${graphRes.status})`,
+        rawLine,
+      };
+    }
+
+    const rawMsgs = graphData.value || [];
+    const parsedMsgs = rawMsgs.map(msg => {
+      const subj = msg.subject || '(No Subject)';
+      const fromName = msg.from?.emailAddress?.name || '';
+      const fromAddr = msg.from?.emailAddress?.address || '';
+      const prev = msg.bodyPreview || '';
+      const content = msg.body?.content || '';
+      const otp = extractOtpCode(subj, prev, content);
+
+      return {
+        id: msg.id || '',
+        subject: subj,
+        from: fromName || fromAddr || 'Unknown',
+        fromEmail: fromAddr,
+        date: msg.receivedDateTime || '',
+        preview: prev,
+        bodySnippet: content ? content.substring(0, 8000) : prev,
+        isRead: !!msg.isRead,
+        otp: otp,
+      };
+    });
+
+    // 3. Filter messages
+    const hasFilter = Boolean(subjectFilter || senderFilter);
+    let matchedMsgs = [];
+
+    if (hasFilter) {
+      const subLow = subjectFilter.toLowerCase();
+      const sndLow = senderFilter.toLowerCase();
+
+      matchedMsgs = parsedMsgs.filter(m => {
+        let matchSub = true;
+        let matchSnd = true;
+
+        if (subLow) {
+          matchSub = (m.subject && m.subject.toLowerCase().includes(subLow)) ||
+                     (m.preview && m.preview.toLowerCase().includes(subLow));
+        }
+
+        if (sndLow) {
+          matchSnd = (m.from && m.from.toLowerCase().includes(sndLow)) ||
+                     (m.fromEmail && m.fromEmail.toLowerCase().includes(sndLow));
+        }
+
+        return matchSub && matchSnd;
+      });
+    } else {
+      // If no filter, treat all fetched messages as matches/readable
+      matchedMsgs = parsedMsgs;
+    }
+
+    const latest = parsedMsgs[0] ? {
+      subject: parsedMsgs[0].subject,
+      from: parsedMsgs[0].from,
+      fromEmail: parsedMsgs[0].fromEmail,
+      date: parsedMsgs[0].date,
+      otp: parsedMsgs[0].otp,
+      preview: parsedMsgs[0].preview,
+    } : null;
+
+    return {
+      email,
+      live: true,
+      canRead: true,
+      matchFound: matchedMsgs.length > 0,
+      matchedCount: matchedMsgs.length,
+      totalInbox: parsedMsgs.length,
+      matches: matchedMsgs,
+      latestMessage: latest,
+      newRefreshToken: (newRefreshToken && newRefreshToken !== refreshToken) ? newRefreshToken : null,
+      error: null,
+      rawLine,
+    };
+  } catch (err) {
+    return {
+      email,
+      live: false,
+      canRead: false,
+      matchFound: false,
+      matchedCount: 0,
+      totalInbox: 0,
+      matches: [],
+      latestMessage: null,
+      error: err.message,
+      rawLine,
+    };
+  }
+}
+
+// ─── Extract OTP / Verification Code Helper ──────────────────
+
+function extractOtpCode(subj, prev, body) {
+  const plain = body ? body.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]*>?/gm, ' ') : '';
+  const all = (subj || '') + ' ' + (prev || '') + ' ' + plain;
+  const isOtp = /(?:verify|verif|code|kode|OTP|PIN|passcode|security|token|sandi|password|auth|login)/i.test(all);
+  const pats = [
+    /(\d{4,8})\s*(?:is your|adalah|code|kode|for)/i,
+    /(?:use|enter|masukkan|gunakan)[\s\S]{0,20}?(\d{4,8})\b/i,
+    /(?:code|kode|OTP|PIN|Steam Guard|token|sandi)[\s\S]{0,40}?([A-Z0-9]{5,8})\b/i,
+    /(?<!#)\b(\d{4,8})\b/i
+  ];
+  for (const pat of pats) {
+    const re = new RegExp(pat.source, 'gi');
+    let m;
+    while ((m = re.exec(all)) !== null) {
+      const c = m[1];
+      if (!c || /^0+$/.test(c) || /^1+$/.test(c)) continue;
+      if (/[a-zA-Z]/.test(c)) {
+        if (c.length >= 5 && /\d/.test(c) && c === c.toUpperCase()) return c;
+        continue;
+      }
+      if (/^\d{4,8}$/.test(c)) {
+        if (pat.source.includes('\\d{4,8}')) {
+          if (isOtp) return c;
+        } else {
+          return c;
+        }
+      }
+    }
+  }
+  return '';
+}
+
+
 // ─── Helpers ─────────────────────────────────────────────────
 
 function parseCookies(cookieHeader) {
@@ -179,3 +484,4 @@ function parseCookies(cookieHeader) {
     })
   );
 }
+

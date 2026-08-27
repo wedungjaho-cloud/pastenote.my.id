@@ -1,0 +1,374 @@
+<div class="page page-wide">
+
+  <!-- TAB: PAGES -->
+  <section id="tab-pages" class="tab active">
+    <div class="stats fade-up">
+      <div class="stat"><span class="stat-num" id="statTotalPages">0</span><span class="stat-name">Pages</span></div>
+      <div class="stat"><span class="stat-num" id="statInboxActive">0</span><span class="stat-name">Inbox Active</span></div>
+      <div class="stat"><span class="stat-num" id="statHasConfig">0</span><span class="stat-name">Config Set</span></div>
+    </div>
+
+    <div class="card fade-up fade-up-d1">
+      <div class="card-header">
+        <div class="card-header-l">
+          <div class="card-icon forest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></div>
+          <h2>Pages</h2>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button id="btnBulkImport" class="btn btn-s btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg> Bulk Import</button>
+          <button id="btnAddPage" class="btn btn-p btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M12 5v14M5 12h14"/></svg> Add Page</button>
+        </div>
+      </div>
+      <div class="inbox-search-bar" style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;background:var(--surface-2)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted-2);flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="adminPageSearch" placeholder="Search pages by email..." style="width:100%;background:transparent;border:none;outline:none;font-size:12px;color:var(--ink);font-family:var(--font-ui)">
+      </div>
+      <div class="card-body">
+        <div id="bulkBar" class="bulk-bar" style="display:none">
+          <input type="checkbox" class="chk" id="selectAll">
+          <span id="bulkCount" class="stat-inline">0 selected</span>
+          <button id="btnBulkDelete" class="btn btn-g btn-sm btn-danger" style="display:none">Delete Selected</button>
+          <button id="btnExportEmail" class="btn btn-g btn-sm">Export Email</button>
+          <button id="btnExportEmailPw" class="btn btn-g btn-sm">Export Email|PW</button>
+        </div>
+        <div id="pagesList"></div>
+      </div>
+    </div>
+
+    <!-- BULK IMPORT PANEL -->
+    <div id="bulkPanel" class="card fade-up" style="display:none;margin-top:16px">
+      <div class="card-header">
+        <div class="card-header-l"><h2>Bulk Import</h2></div>
+        <button id="btnCloseBulk" class="btn btn-g btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M18 6L6 18M6 6l12 12"/></svg> Close</button>
+      </div>
+      <div class="card-body">
+        <p class="text-sm" style="margin-bottom:12px;color:var(--muted)">Paste raw account data — receipts, mixed text, anything. Parser auto-extracts <code>email|password|refresh_token|client_id</code> lines. Live check runs before import.</p>
+        <textarea id="bulkInput" class="inp inp-ta inp-mono" placeholder="Paste accounts here..." rows="8"></textarea>
+        <div class="field-row" style="margin-top:12px;justify-content:space-between">
+          <span class="stat-inline" id="bulkParsed">0 accounts detected</span>
+          <div style="display:flex;gap:6px">
+            <button id="btnBulkParse" class="btn btn-s btn-sm">Parse</button>
+            <button id="btnBulkRun" class="btn btn-p btn-sm" disabled><span class="btn-text">Import All</span><span class="btn-loader" style="display:none"><span class="spinner"></span></span></button>
+          </div>
+        </div>
+        <div id="bulkPreview" style="display:none;margin-top:12px"></div>
+        <div id="bulkStatus" class="status" style="display:none"><span class="status-text"></span></div>
+      </div>
+    </div>
+
+    <!-- EDIT PANEL -->
+    <div id="editPanel" class="card fade-up" style="display:none;margin-top:16px">
+      <div class="card-header">
+        <div class="card-header-l"><h2 id="editPanelTitle">Add New Page</h2></div>
+        <button id="btnCloseEdit" class="btn btn-g btn-sm"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px"><path d="M18 6L6 18M6 6l12 12"/></svg> Close</button>
+      </div>
+      <div class="card-body">
+        <div class="field" style="margin-bottom:12px">
+          <label class="label" style="margin-bottom:6px;display:block">Email</label>
+          <input type="email" id="editEmail" class="inp" placeholder="user@outlook.com">
+          <span style="font-size:11px;color:var(--muted-2);margin-top:4px;display:block">URL: pastenote.my.id/{email}</span>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label class="label" style="margin-bottom:6px;display:block">Visitor Password</label>
+          <input type="text" id="editPassword" class="inp" placeholder="Leave empty to use general password">
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label class="label" style="margin-bottom:6px;display:block">Notes</label>
+          <textarea id="editNote" class="inp inp-ta" placeholder="Write notes..." rows="4"></textarea>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label class="label" style="margin-bottom:6px;display:block">Email Config</label>
+          <input type="text" id="editConfig" class="inp inp-mono" placeholder="email|password|refresh_token|client_id">
+          <span style="font-size:11px;color:var(--muted-2);margin-top:4px;display:block">Encrypted. Supports raw paste: auto-parses TAB-separated format.</span>
+        </div>
+        <div class="field-row" style="margin-bottom:12px">
+          <label class="label" style="margin-bottom:0">Inbox</label>
+          <label class="toggle"><input type="checkbox" id="editInboxEnabled" checked><span class="toggle-track"></span></label>
+        </div>
+        <div class="field-actions">
+          <button id="btnSavePage" class="btn btn-p">Save</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TAB: TOOLS -->
+  <section id="tab-tools" class="tab" style="display:none">
+
+    <!-- TOOL 1: TEST READ INBOX & MESSAGE SEARCHER -->
+    <div class="card fade-up" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-header-l">
+          <div class="card-icon amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 8.5 12 14l9-5.5"/><rect x="3" y="5" width="18" height="14" rx="2.2"/>
+            </svg>
+          </div>
+          <div>
+            <h2 style="font-size:15px;font-weight:600;margin:0">Test Read Inbox & Message Searcher</h2>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="text-sm" style="margin-bottom:12px;color:var(--muted)">
+          Test real-time inbox fetching & check if accounts can receive/read messages. Optionally filter by <strong>Subject</strong> or <strong>Sender</strong>.
+        </p>
+
+        <!-- Credentials Input -->
+        <div class="field" style="margin-bottom:12px">
+          <label class="label" style="margin-bottom:6px;display:flex;justify-content:space-between">
+            <span>Account Credentials (Single or Bulk)</span>
+            <span class="stat-inline" id="inboxSearchCount">0 accounts</span>
+          </label>
+          <textarea id="inboxSearchInput" class="inp inp-ta inp-mono" placeholder="Paste single or bulk accounts:&#10;email|password|refresh_token|client_id&#10;or raw tab-separated lines..." rows="5"></textarea>
+          <span style="font-size:11px;color:var(--muted-2);margin-top:4px;display:block">Supports full pipe format, raw tab-separated receipts, or email|password.</span>
+        </div>
+
+        <!-- Filters Grid -->
+        <div class="tools-filter-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px">
+          <div class="field">
+            <label class="label" style="margin-bottom:4px;font-size:11px">Subject Keyword (Optional)</label>
+            <input type="text" id="inboxSearchSub" class="inp" placeholder="e.g. Test, Verification, 2FA, OTP..." style="font-size:12px">
+          </div>
+          <div class="field">
+            <label class="label" style="margin-bottom:4px;font-size:11px">Sender / From (Optional)</label>
+            <input type="text" id="inboxSearchSender" class="inp" placeholder="e.g. admin@domain.com, Microsoft..." style="font-size:12px">
+          </div>
+          <div class="field">
+            <label class="label" style="margin-bottom:4px;font-size:11px">Check Depth</label>
+            <select id="inboxSearchLimit" class="inp sel-sm" style="height:38px;font-size:12px">
+              <option value="10">Top 10 Messages</option>
+              <option value="15" selected>Top 15 Messages</option>
+              <option value="25">Top 25 Messages</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="field-row" style="margin-top:12px;justify-content:space-between;align-items:center">
+          <span class="text-sm" style="color:var(--muted-2);font-size:11.5px">Runs concurrent batching to prevent rate limits.</span>
+          <button id="btnRunSearchInbox" class="btn btn-p btn-sm">
+            <span class="btn-text">Test & Search Inbox</span>
+            <span class="btn-loader" style="display:none"><span class="spinner"></span></span>
+          </button>
+        </div>
+
+        <!-- Status & Progress -->
+        <div id="inboxSearchStatus" class="status" style="display:none;margin-top:12px"><span class="status-text"></span></div>
+
+        <!-- Results Section -->
+        <div id="inboxSearchResultsWrap" style="display:none;margin-top:16px">
+          <!-- Summary Counters -->
+          <div class="inbox-search-stats" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+            <span class="badge" style="background:var(--surface-3);color:var(--ink);padding:5px 10px;font-size:12px">Total: <strong id="sumTotal" style="margin-left:4px">0</strong></span>
+            <span class="badge badge-ok" style="padding:5px 10px;font-size:12px">Match Found: <strong id="sumMatch" style="margin-left:4px">0</strong></span>
+            <span class="badge" style="background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,158,11,0.25);padding:5px 10px;font-size:12px">No Match (Readable): <strong id="sumNoMatch" style="margin-left:4px">0</strong></span>
+            <span class="badge badge-danger" style="padding:5px 10px;font-size:12px">Auth Failed / Error: <strong id="sumFailed" style="margin-left:4px">0</strong></span>
+          </div>
+
+          <!-- Quick Action Toolbar -->
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding:8px 12px;background:var(--surface-2);border-radius:var(--r-sm);border:1px solid var(--border)">
+            <div style="display:flex;gap:6px;align-items:center">
+              <span style="font-size:11.5px;color:var(--muted)">Filter View:</span>
+              <button class="btn btn-g btn-sm is-filter-btn active" data-v="all" style="height:24px;font-size:11px;padding:2px 8px">All (<span id="cntViewAll">0</span>)</button>
+              <button class="btn btn-g btn-sm is-filter-btn" data-v="match" style="height:24px;font-size:11px;padding:2px 8px">Matches (<span id="cntViewMatch">0</span>)</button>
+              <button class="btn btn-g btn-sm is-filter-btn" data-v="nomatch" style="height:24px;font-size:11px;padding:2px 8px">No Match (<span id="cntViewNoMatch">0</span>)</button>
+              <button class="btn btn-g btn-sm is-filter-btn" data-v="fail" style="height:24px;font-size:11px;padding:2px 8px">Errors (<span id="cntViewFail">0</span>)</button>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button id="btnCopyMatchedEmails" class="btn btn-s btn-sm" style="height:24px;font-size:11px;padding:2px 8px">Copy Matched Emails</button>
+              <button id="btnCopyMatchedConfigs" class="btn btn-s btn-sm" style="height:24px;font-size:11px;padding:2px 8px">Copy Full Matches</button>
+              <button id="btnDownloadSearchReport" class="btn btn-g btn-sm" style="height:24px;font-size:11px;padding:2px 8px">Download Log</button>
+            </div>
+          </div>
+
+          <!-- Results List / Table -->
+          <div class="tbl-wrap" style="max-height:480px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm)">
+            <table class="tbl" id="inboxSearchResultsTable" style="margin:0;font-size:12px">
+              <thead>
+                <tr>
+                  <th style="width:36px">#</th>
+                  <th style="width:90px">Status</th>
+                  <th>Email Account</th>
+                  <th>Matched Message / Sender</th>
+                  <th style="width:110px">OTP Code</th>
+                  <th style="width:80px;text-align:right">Detail</th>
+                </tr>
+              </thead>
+              <tbody id="inboxSearchTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOOL 2: MULTI-FORMAT PARSER & CONVERTER -->
+    <div class="card fade-up fade-up-d1" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-header-l">
+          <div class="card-icon sage">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+            </svg>
+          </div>
+          <div>
+            <h2 style="font-size:15px;font-weight:600;margin:0">Multi-Format Parser & Converter</h2>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="text-sm" style="margin-bottom:12px;color:var(--muted)">
+          Parse mixed account dumps (receipts, tab-separated, colon, pipe) and convert into your chosen format. Automatic duplicate removal.
+        </p>
+
+        <!-- Format Options Selector -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:12px">
+          <div class="field">
+            <label class="label" style="margin-bottom:4px;font-size:11px">Target Output Format</label>
+            <select id="formatTargetType" class="inp sel-sm" style="height:38px;font-size:12px">
+              <option value="email_only">Email Only (email)</option>
+              <option value="email_pipe_pw" selected>Email | Password (email|pass)</option>
+              <option value="email_colon_pw">Email : Password (email:pass)</option>
+              <option value="full_config">Full Config (email|password|refresh_token|client_id)</option>
+              <option value="email_token_client">Email | Refresh Token | Client ID</option>
+              <option value="custom">Custom Pattern Template...</option>
+            </select>
+          </div>
+          <div class="field" id="formatCustomWrap" style="display:none">
+            <label class="label" style="margin-bottom:4px;font-size:11px">Custom Pattern (e.g. {email}:{password})</label>
+            <input type="text" id="formatCustomTpl" class="inp" placeholder="{email}:{password}" style="font-size:12px" value="{email}:{password}">
+          </div>
+        </div>
+
+        <textarea id="formatInput" class="inp inp-ta inp-mono" placeholder="Paste mixed accounts here (any delimiter or receipt format)..." rows="6"></textarea>
+        
+        <div class="field-row" style="margin-top:12px;justify-content:space-between;align-items:center">
+          <div class="fmt-stats" id="formatStats" style="display:none;gap:14px">
+            <span class="stat-inline">Valid: <strong id="fmtTotal" style="color:var(--green)">0</strong></span>
+            <span class="stat-inline">Duplicates Removed: <strong id="fmtDups" style="color:var(--amber)">0</strong></span>
+          </div>
+          <button id="btnFormat" class="btn btn-p btn-sm">Format Accounts</button>
+        </div>
+
+        <div id="formatOutput" class="fmt-out" style="display:none;margin-top:14px">
+          <div class="fmt-out-hdr" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:12px;color:var(--muted)">Converted Result:</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-g btn-sm" id="fmtCopy">Copy</button>
+              <button class="btn btn-g btn-sm" id="fmtDownload">Download .txt</button>
+            </div>
+          </div>
+          <textarea id="formatResult" class="inp inp-ta inp-mono" readonly rows="6" style="resize:none"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOOL 3: CHECK LIVE -->
+    <div class="card fade-up" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-header-l">
+          <div class="card-icon forest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+          <h2 style="font-size:15px;font-weight:600;margin:0">Check Live</h2>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="text-sm" style="margin-bottom:12px;color:var(--muted)">Quick OAuth2 token validation test. Format: <code>email|password|refresh_token|client_id</code></p>
+        <textarea id="checkLiveInput" class="inp inp-ta inp-mono" placeholder="email|password|refresh_token|client_id" rows="5"></textarea>
+        <div class="field-row" style="margin-top:12px;justify-content:space-between">
+          <span class="stat-inline" id="checkLiveCount">0 accounts</span>
+          <button id="btnCheckLive" class="btn btn-p btn-sm"><span class="btn-text">Check Live</span><span class="btn-loader" style="display:none"><span class="spinner"></span></span></button>
+        </div>
+        <div id="checkLiveStatus" class="status" style="display:none"><span class="status-text"></span></div>
+        <div id="checkLiveResults" class="results-grid" style="display:none">
+          <div class="result-box box-ok"><div class="result-hdr"><span class="result-tag">LIVE <span class="result-cnt" id="clCountLive">0</span></span><button class="btn btn-g btn-sm" id="clCopyLive">Copy</button></div><textarea id="clTextLive" class="result-ta" readonly></textarea></div>
+          <div class="result-box box-die"><div class="result-hdr"><span class="result-tag">DIE <span class="result-cnt" id="clCountDie">0</span></span><button class="btn btn-g btn-sm" id="clCopyDie">Copy</button></div><textarea id="clTextDie" class="result-ta" readonly></textarea></div>
+          <div class="result-box box-err"><div class="result-hdr"><span class="result-tag">ERROR <span class="result-cnt" id="clCountErr">0</span></span><button class="btn btn-g btn-sm" id="clCopyErr">Copy</button></div><textarea id="clTextErr" class="result-ta" readonly></textarea></div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- TAB: SETTINGS -->
+  <section id="tab-settings" class="tab" style="display:none">
+    <div class="card fade-up" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-header-l">
+          <div class="card-icon forest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></div>
+          <h2>General Settings</h2>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="field" style="margin-bottom:12px">
+          <label class="label" style="margin-bottom:6px;display:block">Default Note</label>
+          <textarea id="settingsDefaultNote" class="inp inp-ta" placeholder="Default note for pages without custom notes..." rows="4"></textarea>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label class="label" style="margin-bottom:6px;display:block">General Visitor Password</label>
+          <input type="text" id="settingsGeneralPw" class="inp" placeholder="Global fallback password for all pages">
+          <span style="font-size:11px;color:var(--muted-2);margin-top:4px;display:block">Applied to all pages that don't have a specific password set.</span>
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label class="label" style="margin-bottom:6px;display:block">Recovery Email</label>
+          <input type="email" id="settingsRecoveryEmail" class="inp" placeholder="email@gmail.com">
+          <span style="font-size:11px;color:var(--muted-2);margin-top:4px;display:block">Used for admin password recovery.</span>
+        </div>
+        <div class="field-actions">
+          <button id="btnSaveSettings" class="btn btn-p">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card fade-up fade-up-d1">
+      <div class="card-header">
+        <div class="card-header-l">
+          <div class="card-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <h2>Change Admin Password</h2>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="field" style="margin-bottom:12px"><label class="label" style="margin-bottom:6px;display:block">Current Password</label><input type="password" id="settingsOldPw" class="inp" placeholder="Current password"></div>
+        <div class="field" style="margin-bottom:12px"><label class="label" style="margin-bottom:6px;display:block">New Password</label><input type="password" id="settingsNewPw" class="inp" placeholder="New password (min. 4 characters)"></div>
+        <div class="field" style="margin-bottom:12px"><label class="label" style="margin-bottom:6px;display:block">Confirm Password</label><input type="password" id="settingsConfirmPw" class="inp" placeholder="Re-enter new password"></div>
+        <div class="field-actions"><button id="btnChangePw" class="btn btn-p">Change Password</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PREVIEW MESSAGE MODAL -->
+  <div id="msgPreviewModal" class="modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);z-index:9999;align-items:center;justify-content:center;padding:20px">
+    <div class="card" style="width:100%;max-width:700px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,0.7)">
+      <div class="card-header" style="flex-shrink:0">
+        <div class="card-header-l">
+          <div class="card-icon amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+            </svg>
+          </div>
+          <div>
+            <h3 id="modalSubject" style="font-size:14px;font-weight:600;margin:0;max-width:480px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Message Preview</h3>
+            <span id="modalSender" style="font-size:11.5px;color:var(--muted)"></span>
+          </div>
+        </div>
+        <button id="btnCloseMsgModal" class="btn btn-g btn-sm" style="height:28px">Close</button>
+      </div>
+      <div class="card-body" style="overflow-y:auto;padding:16px;flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+          <div style="font-size:11.5px;color:var(--muted)" id="modalDate"></div>
+          <div id="modalOtpWrap" style="display:none">
+            <span class="otp-code" id="modalOtpCode" style="font-size:12px;padding:3px 8px;cursor:pointer">
+              <span id="modalOtpVal"></span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/></svg>
+            </span>
+          </div>
+        </div>
+        <div id="modalBodyContent" style="background:#ffffff;color:#111827;border-radius:var(--r-sm);padding:14px;min-height:180px;overflow-x:auto;font-size:13px;line-height:1.6"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  window.__PN_PAGES__ = {{PAGES_JSON}};
+  window.__PN_SETTINGS__ = {{SETTINGS_JSON}};
+</script>

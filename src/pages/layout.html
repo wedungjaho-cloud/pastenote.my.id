@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{TITLE}} — PasteNote</title>
+  <meta name="description" content="PasteNote — Private note and inbox viewer.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>{{CSS}}</style>
+</head>
+<body class="{{BODY_CLASS}}">
+
+  {{HEADER}}
+
+  {{BODY}}
+
+  <div id="toast" class="toast-box"></div>
+
+  <script>
+  /* Theme toggle — persisted in localStorage */
+  (function(){
+    var th = localStorage.getItem('pn_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', th);
+    updIcon();
+
+    window.toggleTheme = function(){
+      var c = document.documentElement.getAttribute('data-theme');
+      var n = c === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', n);
+      localStorage.setItem('pn_theme', n);
+      updIcon();
+    };
+
+    function updIcon(){
+      var b = document.getElementById('themeBtn');
+      if (!b) return;
+      var isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+      b.innerHTML = isDark
+        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>'
+        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>';
+    }
+  })();
+
+  /* Toast system */
+  window.showToast = function(ic, msg){
+    var c = document.getElementById('toast');
+    if (!c) return;
+    var el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = '<span>' + msg + '</span>';
+    c.appendChild(el);
+    setTimeout(function(){ el.classList.add('out'); setTimeout(function(){ el.remove(); }, 200); }, 3000);
+  };
+  </script>
+
+  {{SCRIPTS}}
+
+  <script>
+  /* ── Cursor Interactions — parallax, magnetic hover ── */
+  (function(){
+    var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
+    /* Parallax on landing background */
+    var shell = document.getElementById('landingShell');
+    if (shell) {
+      var ticking = false;
+      document.addEventListener('mousemove', function(e) {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(function() {
+          var cx = (e.clientX / window.innerWidth - .5) * 2;
+          var cy = (e.clientY / window.innerHeight - .5) * 2;
+          var dx = cx * -3;
+          var dy = cy * -3;
+          var bg = document.querySelector('body::before');
+          document.body.style.setProperty('--px', dx + 'px');
+          document.body.style.setProperty('--py', dy + 'px');
+          ticking = false;
+        });
+      });
+      /* Apply CSS var-driven translate to body::before via a style injection */
+      var st = document.createElement('style');
+      st.textContent = 'body::before{transform:translate(var(--px,0),var(--py,0));transition:transform .6s cubic-bezier(.22,1,.36,1);}';
+      document.head.appendChild(st);
+    }
+
+    /* Magnetic hover on buttons */
+    var btns = document.querySelectorAll('.btn, .icon-btn, .nav-pill, button.unlock, .lock-form button[type="submit"]');
+    btns.forEach(function(btn){
+      btn.addEventListener('mousemove', function(e){
+        var r = btn.getBoundingClientRect();
+        var x = e.clientX - r.left - r.width/2;
+        var y = e.clientY - r.top - r.height/2;
+        btn.style.transform = 'translate(' + (x*.12) + 'px,' + (y*.12) + 'px)';
+      });
+      btn.addEventListener('mouseleave', function(){
+        btn.style.transform = '';
+      });
+    });
+  })();
+  </script>
+
+</body>
+</html>

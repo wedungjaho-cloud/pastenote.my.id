@@ -1,0 +1,47 @@
+<div class="page-center">
+  <div class="lock-card">
+    <div class="lock-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="5" y="11" width="14" height="9" rx="2.4"/>
+        <path d="M8 11V7.5a4 4 0 0 1 8 0V11"/>
+        <circle cx="12" cy="15.2" r="1.15" fill="currentColor" stroke="none"/>
+      </svg>
+    </div>
+    <h1 class="lock-title">Page Locked</h1>
+    <div class="lock-sub">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-11Z"/>
+        <path d="m3.5 6 8.5 6.5L20.5 6"/>
+      </svg>
+      {{EMAIL_DISPLAY}}
+    </div>
+    <form id="lockForm" class="lock-form" onsubmit="return false">
+      <div class="field">
+        <input type="password" id="lockPw" class="inp inp-pw" placeholder="Enter access key" autocomplete="current-password" autofocus required>
+        <button type="button" id="togglePwBtn" class="eye-btn" title="Toggle password visibility">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="eyeIcon">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+      <div class="lock-err" id="capsWarn" style="display:none;color:var(--amber)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Caps Lock is ON</span>
+      </div>
+      <div class="lock-err" id="lockErr">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 8v5M12 16h.01"/>
+        </svg>
+        <span id="lockErrText"></span>
+      </div>
+      <button type="submit" id="lockBtn" class="btn btn-full">
+        <span class="btn-text">Unlock</span>
+        <span class="btn-loader" style="display:none"><span class="spinner"></span></span>
+      </button>
+    </form>
+    <div class="lock-foot">Private access · link holders only</div>
+  </div>
+</div>
+<script>window.__PN_EMAIL__ = {{EMAIL_JSON}};</script>
+

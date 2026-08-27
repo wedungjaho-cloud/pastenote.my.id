@@ -9,9 +9,7 @@ import { Router } from './router.js';
 import { handleVisitorPage, handleVerifyPassword, handleReadInbox, handleDeleteMessage } from './handlers/pages.js';
 import { handleAdminPage, handleAdminApi } from './handlers/admin.js';
 import { handleToolsApi } from './handlers/tools.js';
-import { renderLanding } from './templates/landing.js';
-import { getMainCSS } from './styles/main.css.js';
-import { getRefinedCSS } from './styles/refined.css.js';
+import { renderLanding, renderNotFound } from './lib/render.js';
 
 export default {
   async fetch(request, env, ctx) {
@@ -23,12 +21,6 @@ export default {
       if (path === '/favicon.svg') {
         return new Response(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect x="4" y="2" width="24" height="28" rx="4" fill="#6F8F72"/><line x1="10" y1="10" x2="22" y2="10" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="16" x2="22" y2="16" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/><line x1="10" y1="22" x2="17" y2="22" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".4"/></svg>`, {
           headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=86400' },
-        });
-      }
-
-      if (path === '/assets/main.css') {
-        return new Response(getMainCSS() + getRefinedCSS(), {
-          headers: { 'Content-Type': 'text/css; charset=utf-8', 'Cache-Control': 'public, max-age=3600' },
         });
       }
 
@@ -48,7 +40,6 @@ export default {
         return handleVisitorPage(request, env, decodeURIComponent(emailPath));
       }
 
-      const { renderNotFound } = await import('./templates/notfound.js');
       return renderNotFound(path);
     } catch (err) {
       console.error('Worker error:', err);

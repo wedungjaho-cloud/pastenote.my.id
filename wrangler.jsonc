@@ -4,6 +4,11 @@
   "main": "src/index.js",
   "compatibility_date": "2025-04-01",
   "workers_dev": true,
+  "rules": [
+    { "type": "Text", "globs": ["**/*.css"], "fallthrough": true },
+    { "type": "Text", "globs": ["**/*.html"], "fallthrough": true },
+    { "type": "Text", "globs": ["**/*.txt"], "fallthrough": true }
+  ],
   "kv_namespaces": [
     {
       "binding": "KV",
