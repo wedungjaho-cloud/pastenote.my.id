@@ -258,11 +258,11 @@ function normalizeInboxMessage(msg) {
 async function fetchInbox(accessToken, mode = 'graph', tokenScope = '', email = '') {
   const outlookEp = {
     type: 'outlook',
-    url: 'https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=15&$orderby=ReceivedDateTime desc&$select=Id,Subject,From,ReceivedDateTime,BodyPreview,Body,IsRead'
+    url: `https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=15&$orderby=${encodeURIComponent('ReceivedDateTime desc')}&$select=Id,Subject,From,ReceivedDateTime,BodyPreview,Body,IsRead`
   };
   const graphEp = {
     type: 'graph',
-    url: 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=15&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead'
+    url: `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=15&$orderby=${encodeURIComponent('receivedDateTime desc')}&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead`
   };
 
   const endpoints = [];
@@ -280,6 +280,7 @@ async function fetchInbox(accessToken, mode = 'graph', tokenScope = '', email = 
   }
 
   let lastError = 'Inbox fetch failed';
+  const debugInfo = [];
 
   for (const ep of endpoints) {
     try {
@@ -293,22 +294,39 @@ async function fetchInbox(accessToken, mode = 'graph', tokenScope = '', email = 
       }
 
       const response = await fetch(ep.url, { headers });
+      console.log(`[fetchInbox] ${ep.type}: HTTP ${response.status}`);
+
       if (response.ok) {
         const data = await response.json();
         if (data.value && Array.isArray(data.value)) {
           return data.value.map(normalizeInboxMessage);
         }
+        // response.ok but no value array — unexpected format
+        lastError = `${ep.type}: response OK but no messages array`;
+        debugInfo.push(`${ep.type}:ok_no_value`);
       } else {
-        const errData = await response.json().catch(() => ({}));
-        lastError = errData.error?.message || errData.error || `HTTP ${response.status}`;
+        const errText = await response.text();
+        let errMsg = `HTTP ${response.status}`;
+        try {
+          const errData = JSON.parse(errText);
+          errMsg = errData.error?.message || errData.error || errMsg;
+        } catch (_) {
+          errMsg = errText.substring(0, 200) || errMsg;
+        }
+        lastError = `${ep.type}: ${errMsg}`;
+        debugInfo.push(`${ep.type}:${response.status}`);
+        console.log(`[fetchInbox] ${ep.type} error: ${errMsg.substring(0, 150)}`);
       }
     } catch (err) {
-      lastError = err.message;
+      lastError = `${ep.type}: ${err.message}`;
+      debugInfo.push(`${ep.type}:catch:${err.message.substring(0, 50)}`);
+      console.log(`[fetchInbox] ${ep.type} exception: ${err.message}`);
     }
   }
 
-  throw new Error(lastError);
+  throw new Error(`${lastError} [tried: ${debugInfo.join(', ')}]`);
 }
+
 
 
 // ─── Cookie Parser ───────────────────────────────────────────

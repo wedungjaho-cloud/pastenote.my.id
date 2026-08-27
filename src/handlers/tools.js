@@ -402,11 +402,11 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
 
     const outlookEp = {
       type: 'outlook',
-      url: `https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=${searchLimit}&$orderby=ReceivedDateTime desc&$select=Id,Subject,From,ReceivedDateTime,BodyPreview,Body,IsRead`
+      url: `https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=${searchLimit}&$orderby=${encodeURIComponent('ReceivedDateTime desc')}&$select=Id,Subject,From,ReceivedDateTime,BodyPreview,Body,IsRead`
     };
     const graphEp = {
       type: 'graph',
-      url: `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=${searchLimit}&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead`
+      url: `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=${searchLimit}&$orderby=${encodeURIComponent('receivedDateTime desc')}&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead`
     };
 
     const hasOutlookScope = tokenScope.includes('outlook.office.com');
