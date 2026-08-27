@@ -299,17 +299,25 @@
     statusEl.className = 'status status-load'; statusEl.querySelector('.status-text').textContent = 'Step 1/2: Checking live status...'; statusEl.style.display = 'flex';
 
     var liveAccounts = [], deadAccounts = [];
-    try {
-      var allConfigs = parsedAccounts.map(function(a) { return a.config; }).join('\n');
-      var clRes = await fetch('/api/tools/check-live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credentials: allConfigs, mode: 'oauth2' }) });
-      var clData = await clRes.json();
-      if (clData.results) {
-        clData.results.forEach(function(r) {
-          var matched = parsedAccounts.find(function(a) { return a.email.toLowerCase() === (r.email || '').toLowerCase(); });
-          if (matched) { if (r.live) liveAccounts.push(matched); else deadAccounts.push(matched); }
-        });
-      }
-    } catch(e) { liveAccounts = parsedAccounts.slice(); }
+    var CHUNK = 15;
+    var checked = 0;
+
+    for (var ci = 0; ci < parsedAccounts.length; ci += CHUNK) {
+      var chunkAccounts = parsedAccounts.slice(ci, ci + CHUNK);
+      var chunkConfigs = chunkAccounts.map(function(a) { return a.config; }).join('\n');
+      try {
+        var clRes = await fetch('/api/tools/check-live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credentials: chunkConfigs, mode: 'oauth2' }) });
+        var clData = await clRes.json();
+        if (clData.results) {
+          clData.results.forEach(function(r) {
+            var matched = chunkAccounts.find(function(a) { return a.email.toLowerCase() === (r.email || '').toLowerCase(); });
+            if (matched) { if (r.live) liveAccounts.push(matched); else deadAccounts.push(matched); }
+          });
+        }
+      } catch(e) { liveAccounts = liveAccounts.concat(chunkAccounts); }
+      checked += chunkAccounts.length;
+      statusEl.querySelector('.status-text').textContent = 'Checking live: ' + checked + '/' + parsedAccounts.length + ' — ' + liveAccounts.length + ' live, ' + deadAccounts.length + ' dead';
+    }
 
     statusEl.querySelector('.status-text').textContent = liveAccounts.length + ' LIVE, ' + deadAccounts.length + ' DEAD — importing live accounts...';
     btn.querySelector('.btn-text').textContent = 'Importing...';
@@ -397,38 +405,45 @@
     var btn = this; var credentials = clInput.value.trim(); if (!credentials) return;
     btn.disabled = true; btn.querySelector('.btn-text').textContent = 'Checking...'; btn.querySelector('.btn-loader').style.display = 'inline-flex';
     var statusEl = document.getElementById('checkLiveStatus');
-    statusEl.className = 'status status-load'; statusEl.querySelector('.status-text').textContent = 'Checking accounts (' + (clMode === 'graph' ? 'Graph API' : 'OAuth2') + ')...'; statusEl.style.display = 'flex';
+    statusEl.className = 'status status-load'; statusEl.style.display = 'flex';
     var cLive = 0, cDie = 0, cErr = 0;
     document.getElementById('clTextLive').value = ''; document.getElementById('clTextDie').value = ''; document.getElementById('clTextErr').value = '';
+    document.getElementById('checkLiveResults').style.display = 'grid';
 
-    try {
-      var lines = credentials.split('\n').filter(function(l) { return l.trim(); });
-      var res = await fetch('/api/tools/check-live', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credentials: credentials, mode: clMode })
-      });
-      var data = await res.json();
-      document.getElementById('checkLiveResults').style.display = 'grid';
+    var lines = credentials.split('\n').filter(function(l) { return l.trim(); });
+    var CHUNK = 15;
+    var done = 0;
 
-      (data.results || []).forEach(function(r) {
-        var orig = lines.find(function(l) { return l.split('|')[0].toLowerCase() === (r.email || '').toLowerCase(); }) || r.email;
-        if (r.live) { document.getElementById('clTextLive').value += (cLive ? '\n' : '') + orig; cLive++; }
-        else if (r.error && (r.error.indexOf('timeout') >= 0 || r.error.indexOf('fetch') >= 0)) { document.getElementById('clTextErr').value += (cErr ? '\n' : '') + orig; cErr++; }
-        else { document.getElementById('clTextDie').value += (cDie ? '\n' : '') + orig; cDie++; }
-      });
+    statusEl.querySelector('.status-text').textContent = '0/' + lines.length + ' checked (' + (clMode === 'graph' ? 'Graph API' : 'OAuth2') + ')...';
 
+    for (var ci = 0; ci < lines.length; ci += CHUNK) {
+      var chunkLines = lines.slice(ci, ci + CHUNK);
+      try {
+        var res = await fetch('/api/tools/check-live', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credentials: chunkLines.join('\n'), mode: clMode })
+        });
+        var data = await res.json();
+        (data.results || []).forEach(function(r) {
+          var orig = chunkLines.find(function(l) { return l.split('|')[0].toLowerCase() === (r.email || '').toLowerCase(); }) || r.email;
+          if (r.live) { document.getElementById('clTextLive').value += (cLive ? '\n' : '') + orig; cLive++; }
+          else if (r.error && (r.error.indexOf('timeout') >= 0 || r.error.indexOf('fetch') >= 0 || r.error.indexOf('subrequest') >= 0)) { document.getElementById('clTextErr').value += (cErr ? '\n' : '') + orig; cErr++; }
+          else { document.getElementById('clTextDie').value += (cDie ? '\n' : '') + orig; cDie++; }
+        });
+      } catch (err) {
+        chunkLines.forEach(function(l) { document.getElementById('clTextErr').value += (cErr ? '\n' : '') + l; cErr++; });
+      }
+      done += chunkLines.length;
       document.getElementById('clCountLive').textContent = cLive;
       document.getElementById('clCountDie').textContent = cDie;
       document.getElementById('clCountErr').textContent = cErr;
-      statusEl.className = 'status status-ok';
-      statusEl.querySelector('.status-text').textContent = cLive + ' LIVE, ' + cDie + ' DIE, ' + cErr + ' ERROR (' + (clMode === 'graph' ? 'Graph API' : 'OAuth2') + ')';
-    } catch (err) {
-      statusEl.className = 'status status-err';
-      statusEl.querySelector('.status-text').textContent = 'Error: ' + err.message;
-    } finally {
-      btn.disabled = false; btn.querySelector('.btn-text').textContent = 'Check Live'; btn.querySelector('.btn-loader').style.display = 'none';
+      statusEl.querySelector('.status-text').textContent = done + '/' + lines.length + ' checked — ' + cLive + ' LIVE, ' + cDie + ' DIE, ' + cErr + ' ERR';
     }
+
+    statusEl.className = 'status status-ok';
+    statusEl.querySelector('.status-text').textContent = cLive + ' LIVE, ' + cDie + ' DIE, ' + cErr + ' ERROR (' + (clMode === 'graph' ? 'Graph API' : 'OAuth2') + ')';
+    btn.disabled = false; btn.querySelector('.btn-text').textContent = 'Check Live'; btn.querySelector('.btn-loader').style.display = 'none';
   });
 
   function setCopiedBtn(btn, msg) {
@@ -730,66 +745,86 @@
       btnRunSearchInbox.querySelector('.btn-loader').style.display = 'inline-flex';
 
       inboxSearchStatus.className = 'status status-load';
-      inboxSearchStatus.querySelector('.status-text').textContent = 'Connecting via ' + (searchMode === 'oauth2' ? 'OAuth2' : 'Graph API') + ' and searching inboxes...';
       inboxSearchStatus.style.display = 'flex';
 
-      try {
-        var res = await fetch('/api/tools/search-inbox', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            credentials: creds,
-            mode: searchMode,
-            subjectFilter: sub,
-            senderFilter: snd,
-            searchLimit: limit
-          })
-        });
+      var allLines = creds.split(/\r?\n/).filter(function(l) { return l.trim(); });
+      var CHUNK = 5; // 5 accounts per Worker invocation (~10 subrequests)
+      var done = 0;
+      searchResultsData = [];
 
-        var data = await res.json();
-        if (data.success && data.results) {
-          searchResultsData = data.results;
+      inboxSearchStatus.querySelector('.status-text').textContent = '0/' + allLines.length + ' inboxes checked (' + (searchMode === 'oauth2' ? 'OAuth2' : 'Graph API') + ')...';
+      inboxSearchResultsWrap.style.display = 'block';
+      currentSearchFilterView = 'all';
+      document.querySelectorAll('.is-filter-btn').forEach(function(b){ b.classList.remove('active'); });
+      var allBtn = document.querySelector('.is-filter-btn[data-v="all"]');
+      if (allBtn) allBtn.classList.add('active');
 
-          // Update Summary numbers
-          var s = data.summary || {
-            total: searchResultsData.length,
-            matchFound: searchResultsData.filter(function(r){ return r.matchFound; }).length,
-            noMatch: searchResultsData.filter(function(r){ return r.canRead && !r.matchFound; }).length,
-            failed: searchResultsData.filter(function(r){ return !r.canRead; }).length
-          };
-
-          document.getElementById('sumTotal').textContent = s.total;
-          document.getElementById('sumMatch').textContent = s.matchFound;
-          document.getElementById('sumNoMatch').textContent = s.noMatch;
-          document.getElementById('sumFailed').textContent = s.failed;
-
-          document.getElementById('cntViewAll').textContent = s.total;
-          document.getElementById('cntViewMatch').textContent = s.matchFound;
-          document.getElementById('cntViewNoMatch').textContent = s.noMatch;
-          document.getElementById('cntViewFail').textContent = s.failed;
-
-          inboxSearchResultsWrap.style.display = 'block';
-          currentSearchFilterView = 'all';
-          document.querySelectorAll('.is-filter-btn').forEach(function(b){ b.classList.remove('active'); });
-          document.querySelector('.is-filter-btn[data-v="all"]')?.classList.add('active');
-
-          renderSearchResults();
-
-          inboxSearchStatus.className = 'status status-ok';
-          inboxSearchStatus.querySelector('.status-text').textContent = 'Checked ' + s.total + ' inboxes (' + (searchMode === 'oauth2' ? 'OAuth2' : 'Graph API') + '): ' + s.matchFound + ' MATCHES FOUND, ' + s.noMatch + ' no match, ' + s.failed + ' auth failed.';
-          showToast('', s.matchFound + ' matching inboxes found!');
-        } else {
-          inboxSearchStatus.className = 'status status-err';
-          inboxSearchStatus.querySelector('.status-text').textContent = 'Search failed: ' + (data.error || 'Unknown error');
+      for (var ci = 0; ci < allLines.length; ci += CHUNK) {
+        var chunkLines = allLines.slice(ci, ci + CHUNK);
+        try {
+          var res = await fetch('/api/tools/search-inbox', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              credentials: chunkLines.join('\n'),
+              mode: searchMode,
+              subjectFilter: sub,
+              senderFilter: snd,
+              searchLimit: limit
+            })
+          });
+          var data = await res.json();
+          if (data.success && data.results) {
+            searchResultsData = searchResultsData.concat(data.results);
+          } else {
+            // If entire chunk failed, add placeholder errors
+            chunkLines.forEach(function(line) {
+              var email = line.split('|')[0] || line;
+              searchResultsData.push({ email: email.trim(), live: false, canRead: false, matchFound: false, matchedCount: 0, totalInbox: 0, matches: [], latestMessage: null, error: data.error || 'Chunk failed', rawLine: line });
+            });
+          }
+        } catch(err) {
+          chunkLines.forEach(function(line) {
+            var email = line.split('|')[0] || line;
+            searchResultsData.push({ email: email.trim(), live: false, canRead: false, matchFound: false, matchedCount: 0, totalInbox: 0, matches: [], latestMessage: null, error: err.message, rawLine: line });
+          });
         }
-      } catch(err) {
-        inboxSearchStatus.className = 'status status-err';
-        inboxSearchStatus.querySelector('.status-text').textContent = 'Error: ' + err.message;
-      } finally {
-        btnRunSearchInbox.disabled = false;
-        btnRunSearchInbox.querySelector('.btn-text').textContent = 'Test & Search Inbox';
-        btnRunSearchInbox.querySelector('.btn-loader').style.display = 'none';
+
+        done += chunkLines.length;
+
+        // Live-update summary & table
+        var s = {
+          total: searchResultsData.length,
+          matchFound: searchResultsData.filter(function(r){ return r.matchFound; }).length,
+          noMatch: searchResultsData.filter(function(r){ return r.canRead && !r.matchFound; }).length,
+          failed: searchResultsData.filter(function(r){ return !r.canRead; }).length
+        };
+        document.getElementById('sumTotal').textContent = s.total;
+        document.getElementById('sumMatch').textContent = s.matchFound;
+        document.getElementById('sumNoMatch').textContent = s.noMatch;
+        document.getElementById('sumFailed').textContent = s.failed;
+        document.getElementById('cntViewAll').textContent = s.total;
+        document.getElementById('cntViewMatch').textContent = s.matchFound;
+        document.getElementById('cntViewNoMatch').textContent = s.noMatch;
+        document.getElementById('cntViewFail').textContent = s.failed;
+
+        renderSearchResults();
+        inboxSearchStatus.querySelector('.status-text').textContent = done + '/' + allLines.length + ' checked — ' + s.matchFound + ' matches, ' + s.noMatch + ' no match, ' + s.failed + ' failed';
       }
+
+      var finalS = {
+        total: searchResultsData.length,
+        matchFound: searchResultsData.filter(function(r){ return r.matchFound; }).length,
+        noMatch: searchResultsData.filter(function(r){ return r.canRead && !r.matchFound; }).length,
+        failed: searchResultsData.filter(function(r){ return !r.canRead; }).length
+      };
+      inboxSearchStatus.className = 'status status-ok';
+      inboxSearchStatus.querySelector('.status-text').textContent = 'Checked ' + finalS.total + ' inboxes (' + (searchMode === 'oauth2' ? 'OAuth2' : 'Graph API') + '): ' + finalS.matchFound + ' MATCHES FOUND, ' + finalS.noMatch + ' no match, ' + finalS.failed + ' auth failed.';
+      showToast('', finalS.matchFound + ' matching inboxes found!');
+
+      btnRunSearchInbox.disabled = false;
+      btnRunSearchInbox.querySelector('.btn-text').textContent = 'Test & Search Inbox';
+      btnRunSearchInbox.querySelector('.btn-loader').style.display = 'none';
     });
   }
 

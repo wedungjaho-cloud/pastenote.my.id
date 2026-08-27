@@ -46,6 +46,10 @@ async function handleCheckLive(request, env) {
 
   const lines = body.credentials.split('\n').filter(l => l.trim());
   const mode = (body.mode === 'graph') ? 'graph' : 'oauth2';
+  const MAX_PER_REQUEST = 20;
+  if (lines.length > MAX_PER_REQUEST) {
+    return Router.jsonResponse({ success: false, error: `Max ${MAX_PER_REQUEST} accounts per request. Client should chunk.` }, 400);
+  }
   const results = [];
 
   for (const line of lines) {
@@ -217,14 +221,16 @@ async function handleSearchInbox(request, env) {
   const senderFilter = (body.senderFilter || '').trim();
   const searchLimit = Math.min(Math.max(parseInt(body.searchLimit, 10) || 15, 1), 30);
 
-  const results = [];
-  const chunkSize = 3; // Conservative: ~2 subrequests/account × 3 = 6 per chunk
+  const MAX_PER_REQUEST = 10;
+  if (rawLines.length > MAX_PER_REQUEST) {
+    return Router.jsonResponse({ success: false, error: `Max ${MAX_PER_REQUEST} accounts per request. Client should chunk.` }, 400);
+  }
 
-  for (let i = 0; i < rawLines.length; i += chunkSize) {
-    const chunk = rawLines.slice(i, i + chunkSize);
-    const chunkPromises = chunk.map(line => searchSingleAccountInbox(line, subjectFilter, senderFilter, searchLimit, mode));
-    const chunkResults = await Promise.all(chunkPromises);
-    results.push(...chunkResults);
+  // Process accounts sequentially to minimize concurrent subrequests
+  const results = [];
+  for (const line of rawLines) {
+    const result = await searchSingleAccountInbox(line, subjectFilter, senderFilter, searchLimit, mode);
+    results.push(result);
   }
 
   const summary = {
