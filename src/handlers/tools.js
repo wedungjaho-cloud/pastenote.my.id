@@ -49,7 +49,15 @@ async function handleCheckLive(request, env) {
   const results = [];
 
   for (const line of lines) {
-    const parts = line.split('|');
+    let cleanLine = line;
+    if (cleanLine.includes('\t')) {
+      const tabParts = cleanLine.split('\t').map(p => p.trim()).filter(Boolean);
+      const foundPipe = tabParts.find(p => p.includes('|') && p.includes('@'));
+      if (foundPipe) cleanLine = foundPipe;
+    }
+    if (cleanLine.endsWith('$')) cleanLine = cleanLine.slice(0, -1);
+
+    const parts = cleanLine.split('|');
     const email = parts[0]?.trim();
     const password = parts[1]?.trim();
     const refreshToken = parts[2]?.trim();
@@ -62,49 +70,40 @@ async function handleCheckLive(request, env) {
 
     try {
       if (refreshToken) {
-        // Try token refresh with selected mode scope
         const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
-        const scope = (mode === 'oauth2')
-          ? 'https://outlook.office.com/Mail.Read offline_access'
-          : 'https://graph.microsoft.com/Mail.Read offline_access';
+        const scopesToTry = (mode === 'oauth2')
+          ? [undefined, 'https://outlook.office.com/Mail.Read offline_access', 'https://graph.microsoft.com/Mail.Read offline_access']
+          : ['https://graph.microsoft.com/Mail.Read offline_access', undefined, 'https://outlook.office.com/Mail.Read offline_access'];
 
-        const tokenBody = new URLSearchParams({
-          grant_type: 'refresh_token',
-          refresh_token: refreshToken,
-          client_id: clientId,
-          scope: scope,
-        });
+        let liveFound = false;
+        let lastErr = 'Token invalid';
 
-        const res = await fetch(tokenUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: tokenBody.toString(),
-        });
+        for (const sc of scopesToTry) {
+          const params = {
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken,
+            client_id: clientId,
+          };
+          if (sc) params.scope = sc;
 
-        const data = await res.json();
-        if (data.access_token) {
-          results.push({ email, live: true, error: null });
-        } else {
-          // If OAuth2 failed, try graph scope fallback
-          if (mode === 'oauth2') {
-            const fbBody = new URLSearchParams({
-              grant_type: 'refresh_token',
-              refresh_token: refreshToken,
-              client_id: clientId,
-              scope: 'https://graph.microsoft.com/Mail.Read offline_access',
-            });
-            const fbRes = await fetch(tokenUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-              body: fbBody.toString(),
-            });
-            const fbData = await fbRes.json();
-            if (fbData.access_token) {
-              results.push({ email, live: true, error: null });
-              continue;
-            }
+          const res = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams(params).toString(),
+          });
+
+          const data = await res.json();
+          if (data.access_token) {
+            results.push({ email, live: true, error: null });
+            liveFound = true;
+            break;
+          } else {
+            lastErr = data.error_description || data.error || lastErr;
           }
-          results.push({ email, live: false, error: data.error_description || data.error || 'Token invalid' });
+        }
+
+        if (!liveFound) {
+          results.push({ email, live: false, error: lastErr });
         }
       } else {
         // Basic check: try ROPC grant (email+password only)
@@ -131,7 +130,7 @@ async function handleCheckLive(request, env) {
         if (data.access_token) {
           results.push({ email, live: true, error: null });
         } else {
-          results.push({ email, live: false, error: data.error_description || data.error || 'Auth failed' });
+          results.push({ email, live: false, error: data.error_description || data.error || 'Password login failed' });
         }
       }
     } catch (err) {
@@ -143,59 +142,57 @@ async function handleCheckLive(request, env) {
 }
 
 
-// ─── Get Token — dapatkan refresh_token dari ROPC ────────────
+// ─── Get OAuth2 Access Token Helper ──────────────────────────
 
 async function handleGetToken(request, env) {
   const body = await request.json().catch(() => null);
-  if (!body || !body.credentials) {
-    return Router.jsonResponse({ success: false, error: 'Credentials wajib diisi' }, 400);
+  if (!body || !body.refreshToken) {
+    return Router.jsonResponse({ success: false, error: 'refreshToken is required' }, 400);
   }
 
-  const lines = body.credentials.split('\n').filter(l => l.trim());
-  const results = [];
+  const clientId = body.clientId || '9e5f94bc-e8a4-4e73-b8be-63364c29d753';
+  const mode = (body.mode === 'oauth2') ? 'oauth2' : 'graph';
 
-  for (const line of lines) {
-    const parts = line.split('|');
-    const email = parts[0]?.trim();
-    const password = parts[1]?.trim();
-    const clientId = parts[2]?.trim() || '9e5f94bc-e8a4-4e73-b8be-63364c29d753';
+  try {
+    const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
+    const scopesToTry = (mode === 'oauth2')
+      ? [undefined, 'https://outlook.office.com/Mail.Read offline_access', 'https://graph.microsoft.com/Mail.Read offline_access']
+      : ['https://graph.microsoft.com/Mail.Read offline_access', undefined, 'https://outlook.office.com/Mail.Read offline_access'];
 
-    if (!email || !password) {
-      results.push({ email: email || line, success: false, error: 'Format: email|password atau email|password|client_id' });
-      continue;
-    }
+    let lastError = 'Failed to get token';
 
-    try {
-      const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
-      const tokenBody = new URLSearchParams({
-        grant_type: 'password',
-        username: email,
-        password: password,
+    for (const sc of scopesToTry) {
+      const params = {
+        grant_type: 'refresh_token',
+        refresh_token: body.refreshToken,
         client_id: clientId,
-        scope: 'https://graph.microsoft.com/Mail.ReadWrite offline_access',
-      });
+      };
+      if (sc) params.scope = sc;
 
       const res = await fetch(tokenUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: tokenBody.toString(),
+        body: new URLSearchParams(params).toString(),
       });
 
       const data = await res.json();
-
-      if (data.access_token && data.refresh_token) {
-        // Format output: email|password|refresh_token|client_id
-        const formatted = `${email}|${password}|${data.refresh_token}|${clientId}`;
-        results.push({ email, success: true, formatted, error: null });
+      if (data.access_token) {
+        return Router.jsonResponse({
+          success: true,
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token || body.refreshToken,
+          expiresIn: data.expires_in,
+          scope: data.scope,
+        });
       } else {
-        results.push({ email, success: false, formatted: null, error: data.error_description || data.error || 'Failed' });
+        lastError = data.error_description || data.error || lastError;
       }
-    } catch (err) {
-      results.push({ email, success: false, formatted: null, error: err.message });
     }
-  }
 
-  return Router.jsonResponse({ success: true, results });
+    return Router.jsonResponse({ success: false, error: lastError }, 400);
+  } catch (err) {
+    return Router.jsonResponse({ success: false, error: err.message }, 500);
+  }
 }
 
 
@@ -267,69 +264,55 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
   }
 
   try {
-    // 1. Get access token
+    // 1. Get access token with adaptive scopes
     let accessToken = null;
     let newRefreshToken = null;
 
-    const scope = (mode === 'oauth2')
-      ? 'https://outlook.office.com/Mail.Read offline_access'
-      : 'https://graph.microsoft.com/Mail.Read offline_access';
-
     if (refreshToken) {
-      // Try refresh_token grant
       const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
-      const tokenBody = new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-        client_id: clientId,
-        scope: scope,
-      });
+      const scopesToTry = (mode === 'oauth2')
+        ? [undefined, 'https://outlook.office.com/Mail.Read offline_access', 'https://graph.microsoft.com/Mail.Read offline_access']
+        : ['https://graph.microsoft.com/Mail.Read offline_access', undefined, 'https://outlook.office.com/Mail.Read offline_access'];
 
-      const tokenRes = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: tokenBody.toString(),
-      });
+      let lastErr = 'Refresh token invalid/expired';
 
-      const tokenData = await tokenRes.json();
-      if (tokenData.access_token) {
-        accessToken = tokenData.access_token;
-        newRefreshToken = tokenData.refresh_token || refreshToken;
-      } else {
-        // If OAuth2 failed, try fallback scope
-        if (mode === 'oauth2') {
-          const fbBody = new URLSearchParams({
-            grant_type: 'refresh_token',
-            refresh_token: refreshToken,
-            client_id: clientId,
-            scope: 'https://graph.microsoft.com/Mail.Read offline_access',
-          });
-          const fbRes = await fetch(tokenUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: fbBody.toString(),
-          });
-          const fbData = await fbRes.json();
-          if (fbRes.ok && fbData.access_token) {
-            accessToken = fbData.access_token;
-            newRefreshToken = fbData.refresh_token || refreshToken;
-          }
+      for (const sc of scopesToTry) {
+        const params = {
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken,
+          client_id: clientId,
+        };
+        if (sc) params.scope = sc;
+
+        const tokenRes = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(params).toString(),
+        });
+
+        const tokenData = await tokenRes.json();
+        if (tokenData.access_token) {
+          accessToken = tokenData.access_token;
+          newRefreshToken = tokenData.refresh_token || refreshToken;
+          break;
+        } else {
+          lastErr = tokenData.error_description || tokenData.error || lastErr;
         }
+      }
 
-        if (!accessToken) {
-          return {
-            email,
-            live: false,
-            canRead: false,
-            matchFound: false,
-            matchedCount: 0,
-            totalInbox: 0,
-            matches: [],
-            latestMessage: null,
-            error: tokenData.error_description || tokenData.error || 'Refresh token invalid/expired',
-            rawLine,
-          };
-        }
+      if (!accessToken) {
+        return {
+          email,
+          live: false,
+          canRead: false,
+          matchFound: false,
+          matchedCount: 0,
+          totalInbox: 0,
+          matches: [],
+          latestMessage: null,
+          error: lastErr,
+          rawLine,
+        };
       }
     } else if (password) {
       // Fallback: try ROPC (password grant)
@@ -339,7 +322,7 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
         username: email,
         password: password,
         client_id: clientId,
-        scope: scope,
+        scope: (mode === 'oauth2') ? 'https://outlook.office.com/Mail.Read offline_access' : 'https://graph.microsoft.com/Mail.Read offline_access',
       });
 
       const tokenRes = await fetch(tokenUrl, {
@@ -381,50 +364,64 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
       };
     }
 
-    // 2. Fetch inbox messages
+    // 2. Fetch inbox messages with adaptive dual endpoint fallback
     let rawMsgs = [];
+    const endpoints = [];
+
+    const outlookEp = {
+      type: 'outlook',
+      url: `https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=${searchLimit}&$orderby=DateTimeReceived desc&$select=Id,Subject,From,DateTimeReceived,BodyPreview,Body,IsRead`
+    };
+    const graphEp = {
+      type: 'graph',
+      url: `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=${searchLimit}&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead`
+    };
 
     if (mode === 'oauth2') {
-      const outlookUrl = `https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=${searchLimit}&$orderby=DateTimeReceived desc&$select=Id,Subject,From,DateTimeReceived,BodyPreview,Body,IsRead`;
-      try {
-        const outRes = await fetch(outlookUrl, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            Accept: 'application/json',
-          },
-        });
-        if (outRes.ok) {
-          const outData = await outRes.json();
-          rawMsgs = outData.value || [];
-        }
-      } catch (_) {}
+      endpoints.push(outlookEp);
+      endpoints.push(graphEp);
+    } else {
+      endpoints.push(graphEp);
+      endpoints.push(outlookEp);
     }
 
-    // Default / Fallback: Microsoft Graph API v1.0
-    if (!rawMsgs.length) {
-      const graphUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=${searchLimit}&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead`;
-      const graphRes = await fetch(graphUrl, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+    let fetchError = null;
 
-      const graphData = await graphRes.json();
+    for (const ep of endpoints) {
+      try {
+        const headers = { Authorization: `Bearer ${accessToken}` };
+        if (ep.type === 'outlook') headers.Accept = 'application/json';
 
-      if (!graphRes.ok) {
-        return {
-          email,
-          live: true,
-          canRead: false,
-          matchFound: false,
-          matchedCount: 0,
-          totalInbox: 0,
-          matches: [],
-          latestMessage: null,
-          error: graphData.error?.message || `Graph API error (${graphRes.status})`,
-          rawLine,
-        };
+        const res = await fetch(ep.url, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.value && Array.isArray(data.value)) {
+            rawMsgs = data.value;
+            fetchError = null;
+            break;
+          }
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          fetchError = errData.error?.message || errData.error || `HTTP ${res.status}`;
+        }
+      } catch (err) {
+        fetchError = err.message;
       }
+    }
 
-      rawMsgs = graphData.value || [];
+    if (fetchError && !rawMsgs.length) {
+      return {
+        email,
+        live: true,
+        canRead: false,
+        matchFound: false,
+        matchedCount: 0,
+        totalInbox: 0,
+        matches: [],
+        latestMessage: null,
+        error: fetchError,
+        rawLine,
+      };
     }
     const parsedMsgs = rawMsgs.map(msg => {
       const subj = msg.subject || msg.Subject || '(No Subject)';

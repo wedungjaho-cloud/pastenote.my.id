@@ -26,20 +26,21 @@
 .resize-handle {
   position: absolute;
   top: 0;
-  right: -3px;
-  width: 6px;
+  right: -6px;
+  width: 12px;
   height: 100%;
   cursor: col-resize;
-  z-index: 30;
+  z-index: 50;
   background: transparent;
-  transition: background 0.15s;
+  touch-action: none;
+  user-select: none;
 }
 .resize-handle::after {
   content: '';
   position: absolute;
   top: 0;
-  left: 2px;
-  width: 1px;
+  left: 5px;
+  width: 2px;
   height: 100%;
   background: var(--border);
   transition: background 0.15s, width 0.15s, left 0.15s, box-shadow 0.15s;
@@ -48,7 +49,7 @@
 .resize-handle.dragging::after {
   background: var(--green);
   width: 3px;
-  left: 1px;
+  left: 4px;
   box-shadow: 0 0 12px var(--green-glow);
 }
 

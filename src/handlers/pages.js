@@ -183,58 +183,50 @@ export async function handleReadInbox(request, env) {
 async function refreshOAuth2Token(refreshToken, clientId, mode = 'graph') {
   const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
 
-  // Choose scope based on mode
-  const scope = (mode === 'oauth2')
-    ? 'https://outlook.office.com/Mail.Read offline_access'
-    : 'https://graph.microsoft.com/Mail.Read offline_access';
-
-  const body = new URLSearchParams({
-    grant_type: 'refresh_token',
-    refresh_token: refreshToken,
-    client_id: clientId,
-    scope: scope,
-  });
-
-  const response = await fetch(tokenUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: body.toString(),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok || !data.access_token) {
-    // If OAuth2 mode fails with scope issue, try fallback scope
-    if (mode === 'oauth2') {
-      const fallbackBody = new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: refreshToken,
-        client_id: clientId,
-        scope: 'https://graph.microsoft.com/Mail.Read offline_access',
-      });
-      const fbRes = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: fallbackBody.toString(),
-      });
-      const fbData = await fbRes.json();
-      if (fbRes.ok && fbData.access_token) {
-        return {
-          access_token: fbData.access_token,
-          refresh_token: fbData.refresh_token || refreshToken,
-          expires_in: fbData.expires_in,
-        };
-      }
-    }
-
-    throw new Error(data.error_description || data.error || 'Token refresh failed');
+  const scopesToTry = [];
+  if (mode === 'oauth2') {
+    scopesToTry.push(undefined); // Consented scope default
+    scopesToTry.push('https://outlook.office.com/Mail.Read offline_access');
+    scopesToTry.push('https://graph.microsoft.com/Mail.Read offline_access');
+  } else {
+    scopesToTry.push('https://graph.microsoft.com/Mail.Read offline_access');
+    scopesToTry.push(undefined);
+    scopesToTry.push('https://outlook.office.com/Mail.Read offline_access');
   }
 
-  return {
-    access_token: data.access_token,
-    refresh_token: data.refresh_token || refreshToken,
-    expires_in: data.expires_in,
-  };
+  let lastError = 'Token refresh failed';
+
+  for (const sc of scopesToTry) {
+    const params = {
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: clientId,
+    };
+    if (sc) params.scope = sc;
+
+    try {
+      const response = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(params).toString(),
+      });
+      const data = await response.json();
+      if (response.ok && data.access_token) {
+        return {
+          access_token: data.access_token,
+          refresh_token: data.refresh_token || refreshToken,
+          expires_in: data.expires_in,
+          scope: data.scope,
+        };
+      } else {
+        lastError = data.error_description || data.error || lastError;
+      }
+    } catch (err) {
+      lastError = err.message;
+    }
+  }
+
+  throw new Error(lastError);
 }
 
 
@@ -257,47 +249,48 @@ function normalizeInboxMessage(msg) {
 // ─── Fetch Inbox (Graph API or Outlook REST API) ─────────────
 
 async function fetchInbox(accessToken, mode = 'graph') {
+  const endpoints = [];
+
+  const outlookEp = {
+    type: 'outlook',
+    url: 'https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=15&$orderby=DateTimeReceived desc&$select=Id,Subject,From,DateTimeReceived,BodyPreview,Body,IsRead'
+  };
+  const graphEp = {
+    type: 'graph',
+    url: 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=15&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead'
+  };
+
   if (mode === 'oauth2') {
-    // Outlook REST API v2.0
-    const outlookUrl = 'https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages'
-      + '?$top=15'
-      + '&$orderby=DateTimeReceived desc'
-      + '&$select=Id,Subject,From,DateTimeReceived,BodyPreview,Body,IsRead';
+    endpoints.push(outlookEp);
+    endpoints.push(graphEp);
+  } else {
+    endpoints.push(graphEp);
+    endpoints.push(outlookEp);
+  }
 
+  let lastError = 'Inbox fetch failed';
+
+  for (const ep of endpoints) {
     try {
-      const response = await fetch(outlookUrl, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          Accept: 'application/json',
-        },
-      });
+      const headers = { Authorization: `Bearer ${accessToken}` };
+      if (ep.type === 'outlook') headers.Accept = 'application/json';
 
+      const response = await fetch(ep.url, { headers });
       if (response.ok) {
         const data = await response.json();
-        return (data.value || []).map(normalizeInboxMessage);
+        if (data.value && Array.isArray(data.value)) {
+          return data.value.map(normalizeInboxMessage);
+        }
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        lastError = errData.error?.message || errData.error || `HTTP ${response.status}`;
       }
-    } catch (_) {
-      // Fallback to Graph API if outlook.office.com fails
+    } catch (err) {
+      lastError = err.message;
     }
   }
 
-  // Default / Fallback: Microsoft Graph API v1.0
-  const graphUrl = 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages'
-    + '?$top=15'
-    + '&$orderby=receivedDateTime desc'
-    + '&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead';
-
-  const response = await fetch(graphUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.error?.message || `Graph API error: ${response.status}`);
-  }
-
-  return (data.value || []).map(normalizeInboxMessage);
+  throw new Error(lastError);
 }
 
 

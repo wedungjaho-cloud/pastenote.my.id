@@ -577,6 +577,11 @@
       if (arT.checked){ if (!loading) doRead(); startAR(); if (window.showToast) window.showToast('', 'Auto refresh on'); }
       else { stopAR(); if (window.showToast) window.showToast('', 'Auto refresh off'); }
     });
+  }
+  if (arI) {
+    arI.addEventListener('change', function(){ if (arT && arT.checked) startAR(); });
+  }
+
   /* ─── Search & Note Copy Listeners ─── */
   if (mailSearch) {
     mailSearch.addEventListener('input', function(){
@@ -660,8 +665,10 @@
       if (!dragging) return;
       e.preventDefault();
       var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      var rect = layout.getBoundingClientRect();
       var totalW = layout.offsetWidth;
-      var newW = Math.max(MIN_PX, Math.min(clientX, totalW * 0.55));
+      var offsetLeft = clientX - rect.left;
+      var newW = Math.max(MIN_PX, Math.min(offsetLeft, totalW * 0.65));
       var pct = (newW / totalW) * 100;
       layout.style.setProperty('--rail-w', pct + '%');
     }
@@ -688,9 +695,11 @@
     handle.addEventListener('touchstart', onDown, { passive: false });
 
     handle.addEventListener('dblclick', function(){
-      layout.style.removeProperty('--rail-w');
-      try { localStorage.removeItem(RAIL_KEY); } catch(e){}
+      layout.style.setProperty('--rail-w', '35%');
+      localStorage.removeItem(RAIL_KEY);
+      if (window.showToast) window.showToast('', 'Split view reset');
     });
   })();
 })();
+
 
