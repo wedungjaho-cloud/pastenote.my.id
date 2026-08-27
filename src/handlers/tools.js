@@ -96,13 +96,18 @@ async function handleCheckLive(request, env) {
 
           const res = await fetch(tokenUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+            },
             body: new URLSearchParams(params).toString(),
           });
 
           const data = await res.json();
           if (data.access_token) {
-            results.push({ email, live: true, error: null });
+            const freshRt = data.refresh_token || refreshToken;
+            const updatedLine = `${email}|${password || ''}|${freshRt}|${clientId}`;
+            results.push({ email, live: true, newRefreshToken: freshRt, newFullLine: updatedLine, error: null });
             liveFound = true;
             break;
           } else {
@@ -303,7 +308,10 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
 
         const tokenRes = await fetch(tokenUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+          },
           body: new URLSearchParams(params).toString(),
         });
 
@@ -345,7 +353,10 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
 
       const tokenRes = await fetch(tokenUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+        },
         body: tokenBody.toString(),
       });
 
@@ -382,7 +393,10 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
       };
     }
 
-    // 2. Fetch inbox — smart-route based on token scope (avoids unnecessary subrequests)
+    const freshRt = newRefreshToken || refreshToken;
+    const newFullLine = `${email}|${password || ''}|${freshRt || ''}|${clientId}`;
+
+    // 2. Fetch inbox — smart-route based on token scope with resilient fallback
     let rawMsgs = [];
     const endpoints = [];
 
@@ -399,9 +413,9 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
     const hasGraphScope = tokenScope.includes('graph.microsoft.com');
 
     if (hasOutlookScope && !hasGraphScope) {
-      endpoints.push(outlookEp);  // token only works for Outlook
+      endpoints.push(outlookEp, graphEp);
     } else if (hasGraphScope && !hasOutlookScope) {
-      endpoints.push(graphEp);    // token only works for Graph
+      endpoints.push(graphEp, outlookEp);
     } else if (mode === 'oauth2') {
       endpoints.push(outlookEp, graphEp);
     } else {
@@ -412,8 +426,14 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
 
     for (const ep of endpoints) {
       try {
-        const headers = { Authorization: `Bearer ${accessToken}` };
-        if (ep.type === 'outlook') headers.Accept = 'application/json';
+        const headers = {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+        };
+        if (email && email.includes('@')) {
+          headers['X-AnchorMailbox'] = email;
+        }
 
         const res = await fetch(ep.url, { headers });
         if (res.ok) {
@@ -443,6 +463,8 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
         matches: [],
         latestMessage: null,
         error: fetchError,
+        newRefreshToken: freshRt,
+        newFullLine,
         rawLine,
       };
     }

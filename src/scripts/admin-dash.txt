@@ -427,7 +427,8 @@
         var data = await res.json();
         (data.results || []).forEach(function(r) {
           var orig = chunkLines.find(function(l) { return l.split('|')[0].toLowerCase() === (r.email || '').toLowerCase(); }) || r.email;
-          if (r.live) { document.getElementById('clTextLive').value += (cLive ? '\n' : '') + orig; cLive++; }
+          var liveLine = r.newFullLine || orig;
+          if (r.live) { document.getElementById('clTextLive').value += (cLive ? '\n' : '') + liveLine; cLive++; }
           else if (r.error && (r.error.indexOf('timeout') >= 0 || r.error.indexOf('fetch') >= 0 || r.error.indexOf('subrequest') >= 0)) { document.getElementById('clTextErr').value += (cErr ? '\n' : '') + orig; cErr++; }
           else { document.getElementById('clTextDie').value += (cDie ? '\n' : '') + orig; cDie++; }
         });

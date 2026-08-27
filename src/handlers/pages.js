@@ -167,7 +167,7 @@ export async function handleReadInbox(request, env) {
 
   // Fetch inbox according to selected mode
   try {
-    const messages = await fetchInbox(accessToken, mode, tokenScope);
+    const messages = await fetchInbox(accessToken, mode, tokenScope, email);
     return Router.jsonResponse({
       success: true,
       mode,
@@ -210,7 +210,10 @@ async function refreshOAuth2Token(refreshToken, clientId, mode = 'graph') {
     try {
       const response = await fetch(tokenUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+        },
         body: new URLSearchParams(params).toString(),
       });
       const data = await response.json();
@@ -250,10 +253,9 @@ function normalizeInboxMessage(msg) {
 
 
 // ─── Fetch Inbox (Graph API or Outlook REST API) ─────────────
-// Uses tokenScope to pick the correct endpoint on the first try,
-// avoiding a wasted subrequest to the wrong API.
+// Uses tokenScope to pick the preferred endpoint with automatic fallback.
 
-async function fetchInbox(accessToken, mode = 'graph', tokenScope = '') {
+async function fetchInbox(accessToken, mode = 'graph', tokenScope = '', email = '') {
   const outlookEp = {
     type: 'outlook',
     url: 'https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=15&$orderby=ReceivedDateTime desc&$select=Id,Subject,From,ReceivedDateTime,BodyPreview,Body,IsRead'
@@ -263,15 +265,14 @@ async function fetchInbox(accessToken, mode = 'graph', tokenScope = '') {
     url: 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=15&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead'
   };
 
-  // Smart routing: pick endpoint based on actual token scope, not just user preference
   const endpoints = [];
   const hasOutlookScope = tokenScope.includes('outlook.office.com');
   const hasGraphScope = tokenScope.includes('graph.microsoft.com');
 
   if (hasOutlookScope && !hasGraphScope) {
-    endpoints.push(outlookEp);  // token only works for Outlook
+    endpoints.push(outlookEp, graphEp);
   } else if (hasGraphScope && !hasOutlookScope) {
-    endpoints.push(graphEp);    // token only works for Graph
+    endpoints.push(graphEp, outlookEp);
   } else if (mode === 'oauth2') {
     endpoints.push(outlookEp, graphEp);
   } else {
@@ -282,8 +283,14 @@ async function fetchInbox(accessToken, mode = 'graph', tokenScope = '') {
 
   for (const ep of endpoints) {
     try {
-      const headers = { Authorization: `Bearer ${accessToken}` };
-      if (ep.type === 'outlook') headers.Accept = 'application/json';
+      const headers = {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+      };
+      if (email && email.includes('@')) {
+        headers['X-AnchorMailbox'] = email;
+      }
 
       const response = await fetch(ep.url, { headers });
       if (response.ok) {
