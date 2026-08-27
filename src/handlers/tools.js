@@ -75,21 +75,20 @@ async function handleCheckLive(request, env) {
     try {
       if (refreshToken) {
         const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
-        // Try without scope first (uses consented defaults, 1 fetch in happy path)
         const scopesToTry = [
           undefined,
-          (mode === 'oauth2')
-            ? 'https://outlook.office.com/Mail.Read offline_access'
-            : 'https://graph.microsoft.com/Mail.Read offline_access',
+          'https://outlook.office.com/Mail.Read offline_access',
+          'https://graph.microsoft.com/Mail.Read offline_access',
         ];
 
         let liveFound = false;
         let lastErr = 'Token invalid';
+        let currentRt = refreshToken;
 
         for (const sc of scopesToTry) {
           const params = {
             grant_type: 'refresh_token',
-            refresh_token: refreshToken,
+            refresh_token: currentRt,
             client_id: clientId,
           };
           if (sc) params.scope = sc;
@@ -105,9 +104,9 @@ async function handleCheckLive(request, env) {
 
           const data = await res.json();
           if (data.access_token) {
-            const freshRt = data.refresh_token || refreshToken;
-            const updatedLine = `${email}|${password || ''}|${freshRt}|${clientId}`;
-            results.push({ email, live: true, newRefreshToken: freshRt, newFullLine: updatedLine, error: null });
+            if (data.refresh_token) currentRt = data.refresh_token;
+            const updatedLine = `${email}|${password || ''}|${currentRt}|${clientId}`;
+            results.push({ email, live: true, newRefreshToken: currentRt, newFullLine: updatedLine, error: null });
             liveFound = true;
             break;
           } else {
@@ -170,17 +169,17 @@ async function handleGetToken(request, env) {
     const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
     const scopesToTry = [
       undefined,
-      (mode === 'oauth2')
-        ? 'https://outlook.office.com/Mail.Read offline_access'
-        : 'https://graph.microsoft.com/Mail.Read offline_access',
+      'https://outlook.office.com/Mail.Read offline_access',
+      'https://graph.microsoft.com/Mail.Read offline_access',
     ];
 
     let lastError = 'Failed to get token';
+    let currentRt = body.refreshToken;
 
     for (const sc of scopesToTry) {
       const params = {
         grant_type: 'refresh_token',
-        refresh_token: body.refreshToken,
+        refresh_token: currentRt,
         client_id: clientId,
       };
       if (sc) params.scope = sc;
@@ -193,10 +192,11 @@ async function handleGetToken(request, env) {
 
       const data = await res.json();
       if (data.access_token) {
+        if (data.refresh_token) currentRt = data.refresh_token;
         return Router.jsonResponse({
           success: true,
           accessToken: data.access_token,
-          refreshToken: data.refresh_token || body.refreshToken,
+          refreshToken: currentRt,
           expiresIn: data.expires_in,
           scope: data.scope,
         });
@@ -291,17 +291,17 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
       const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
       const scopesToTry = [
         undefined,
-        (mode === 'oauth2')
-          ? 'https://outlook.office.com/Mail.Read offline_access'
-          : 'https://graph.microsoft.com/Mail.Read offline_access',
+        'https://outlook.office.com/Mail.Read offline_access',
+        'https://graph.microsoft.com/Mail.Read offline_access',
       ];
 
       let lastErr = 'Refresh token invalid/expired';
+      let currentRt = refreshToken;
 
       for (const sc of scopesToTry) {
         const params = {
           grant_type: 'refresh_token',
-          refresh_token: refreshToken,
+          refresh_token: currentRt,
           client_id: clientId,
         };
         if (sc) params.scope = sc;
@@ -317,10 +317,20 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
 
         const tokenData = await tokenRes.json();
         if (tokenData.access_token) {
-          accessToken = tokenData.access_token;
-          newRefreshToken = tokenData.refresh_token || refreshToken;
-          tokenScope = tokenData.scope || '';
-          break;
+          if (tokenData.refresh_token) currentRt = tokenData.refresh_token;
+
+          const returnedScope = (tokenData.scope || '').toLowerCase();
+          const hasMailScope = returnedScope.includes('mail.read') || returnedScope.includes('mail.readwrite');
+
+          if (hasMailScope || sc) {
+            // Accept: either has mail scope, or we already requested explicit scope
+            accessToken = tokenData.access_token;
+            newRefreshToken = currentRt;
+            tokenScope = tokenData.scope || '';
+            break;
+          }
+          // No mail scope from default — continue to explicit scope
+          lastErr = `Token scope insufficient: ${tokenData.scope}`;
         } else {
           lastErr = tokenData.error_description || tokenData.error || lastErr;
         }

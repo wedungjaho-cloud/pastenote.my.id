@@ -188,21 +188,25 @@ export async function handleReadInbox(request, env) {
 async function refreshOAuth2Token(refreshToken, clientId, mode = 'graph') {
   const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
 
-  // Always try without scope first — MSA consumer tokens return their
-  // originally-consented scopes, avoiding invalid_grant errors.
+  // Strategy: try scopes in order of likelihood to succeed.
+  // 1. No scope — returns consented defaults. But some accounts only get IMAP/POP
+  //    without Mail.Read, so we MUST validate the returned scope.
+  // 2. Explicit Outlook Mail.Read — works for MSA consumer tokens that have
+  //    Mail.Read consent (most accounts via Thunderbird/Outlook client_id).
+  // 3. Explicit Graph Mail.Read — needs Graph consent (rare for MSA tokens).
   const scopesToTry = [
-    undefined, // consented default — usually succeeds
-    (mode === 'oauth2')
-      ? 'https://outlook.office.com/Mail.Read offline_access'
-      : 'https://graph.microsoft.com/Mail.Read offline_access',
+    undefined,
+    'https://outlook.office.com/Mail.Read offline_access',
+    'https://graph.microsoft.com/Mail.Read offline_access',
   ];
 
   let lastError = 'Token refresh failed';
+  let currentRt = refreshToken; // track rotation across attempts
 
   for (const sc of scopesToTry) {
     const params = {
       grant_type: 'refresh_token',
-      refresh_token: refreshToken,
+      refresh_token: currentRt,
       client_id: clientId,
     };
     if (sc) params.scope = sc;
@@ -217,13 +221,30 @@ async function refreshOAuth2Token(refreshToken, clientId, mode = 'graph') {
         body: new URLSearchParams(params).toString(),
       });
       const data = await response.json();
+
       if (response.ok && data.access_token) {
-        return {
-          access_token: data.access_token,
-          refresh_token: data.refresh_token || refreshToken,
-          expires_in: data.expires_in,
-          scope: data.scope || '',
-        };
+        // Track rotated refresh token for subsequent attempts
+        if (data.refresh_token) {
+          currentRt = data.refresh_token;
+        }
+
+        const returnedScope = (data.scope || '').toLowerCase();
+        const hasMailScope = returnedScope.includes('mail.read') || returnedScope.includes('mail.readwrite');
+
+        if (hasMailScope) {
+          // Good — token has mail access
+          return {
+            access_token: data.access_token,
+            refresh_token: currentRt,
+            expires_in: data.expires_in,
+            scope: data.scope || '',
+          };
+        }
+
+        // Token obtained but lacks Mail scope (e.g. only IMAP/POP/SMTP).
+        // Continue to try explicit Mail.Read scope with the (possibly rotated) refresh token.
+        console.log(`[refreshOAuth2Token] scope="${data.scope}" — lacks Mail.Read, retrying with explicit scope`);
+        lastError = `Token scope insufficient: ${data.scope}`;
       } else {
         lastError = data.error_description || data.error || lastError;
       }
@@ -234,6 +255,7 @@ async function refreshOAuth2Token(refreshToken, clientId, mode = 'graph') {
 
   throw new Error(lastError);
 }
+
 
 
 // ─── Universal Message Normalizer ────────────────────────────
