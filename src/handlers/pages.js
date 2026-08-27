@@ -106,7 +106,7 @@ export async function handleVerifyPassword(request, env) {
 }
 
 
-// ─── POST /api/read-inbox — Fetch inbox from Graph API ──────
+// ─── POST /api/read-inbox — Fetch inbox from Graph API or OAuth2 ──────
 
 export async function handleReadInbox(request, env) {
   const body = await request.json().catch(() => null);
@@ -115,6 +115,7 @@ export async function handleReadInbox(request, env) {
   }
 
   const { email } = body;
+  const mode = (body.mode === 'oauth2') ? 'oauth2' : 'graph';
   const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
 
   // Validate session
@@ -148,10 +149,10 @@ export async function handleReadInbox(request, env) {
     return Router.jsonResponse({ success: false, error: 'Konfigurasi email belum diatur oleh admin' }, 404);
   }
 
-  // Refresh OAuth2 token
+  // Refresh token according to selected mode
   let accessToken;
   try {
-    const tokenResult = await refreshOAuth2Token(config.refresh_token, config.client_id);
+    const tokenResult = await refreshOAuth2Token(config.refresh_token, config.client_id, mode);
     accessToken = tokenResult.access_token;
 
     // Save new refresh token (Microsoft rotates them)
@@ -162,11 +163,12 @@ export async function handleReadInbox(request, env) {
     return Router.jsonResponse({ success: false, error: `Token refresh gagal: ${err.message}` }, 502);
   }
 
-  // Fetch inbox from Graph API
+  // Fetch inbox according to selected mode
   try {
-    const messages = await fetchInbox(accessToken);
+    const messages = await fetchInbox(accessToken, mode);
     return Router.jsonResponse({
       success: true,
+      mode,
       messageCount: messages.length,
       messages,
     });
@@ -178,14 +180,19 @@ export async function handleReadInbox(request, env) {
 
 // ─── OAuth2 Token Refresh ────────────────────────────────────
 
-async function refreshOAuth2Token(refreshToken, clientId) {
+async function refreshOAuth2Token(refreshToken, clientId, mode = 'graph') {
   const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
+
+  // Choose scope based on mode
+  const scope = (mode === 'oauth2')
+    ? 'https://outlook.office.com/Mail.Read offline_access'
+    : 'https://graph.microsoft.com/Mail.Read offline_access';
 
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
     refresh_token: refreshToken,
     client_id: clientId,
-    scope: 'https://graph.microsoft.com/Mail.ReadWrite offline_access',
+    scope: scope,
   });
 
   const response = await fetch(tokenUrl, {
@@ -197,6 +204,29 @@ async function refreshOAuth2Token(refreshToken, clientId) {
   const data = await response.json();
 
   if (!response.ok || !data.access_token) {
+    // If OAuth2 mode fails with scope issue, try fallback scope
+    if (mode === 'oauth2') {
+      const fallbackBody = new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: clientId,
+        scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+      });
+      const fbRes = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: fallbackBody.toString(),
+      });
+      const fbData = await fbRes.json();
+      if (fbRes.ok && fbData.access_token) {
+        return {
+          access_token: fbData.access_token,
+          refresh_token: fbData.refresh_token || refreshToken,
+          expires_in: fbData.expires_in,
+        };
+      }
+    }
+
     throw new Error(data.error_description || data.error || 'Token refresh failed');
   }
 
@@ -208,9 +238,50 @@ async function refreshOAuth2Token(refreshToken, clientId) {
 }
 
 
-// ─── Fetch Inbox from Graph API ──────────────────────────────
+// ─── Universal Message Normalizer ────────────────────────────
 
-async function fetchInbox(accessToken) {
+function normalizeInboxMessage(msg) {
+  return {
+    id: msg.id || msg.Id || '',
+    subject: msg.subject || msg.Subject || '(No Subject)',
+    from: msg.from?.emailAddress?.name || msg.From?.EmailAddress?.Name || '',
+    fromEmail: msg.from?.emailAddress?.address || msg.From?.EmailAddress?.Address || '',
+    date: msg.receivedDateTime || msg.DateTimeReceived || msg.createdDateTime || msg.DateTimeCreated || '',
+    preview: msg.bodyPreview || msg.BodyPreview || '',
+    body: msg.body?.content || msg.Body?.Content || '',
+    isRead: (msg.isRead !== undefined) ? msg.isRead : ((msg.IsRead !== undefined) ? msg.IsRead : false),
+  };
+}
+
+
+// ─── Fetch Inbox (Graph API or Outlook REST API) ─────────────
+
+async function fetchInbox(accessToken, mode = 'graph') {
+  if (mode === 'oauth2') {
+    // Outlook REST API v2.0
+    const outlookUrl = 'https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages'
+      + '?$top=15'
+      + '&$orderby=DateTimeReceived desc'
+      + '&$select=Id,Subject,From,DateTimeReceived,BodyPreview,Body,IsRead';
+
+    try {
+      const response = await fetch(outlookUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return (data.value || []).map(normalizeInboxMessage);
+      }
+    } catch (_) {
+      // Fallback to Graph API if outlook.office.com fails
+    }
+  }
+
+  // Default / Fallback: Microsoft Graph API v1.0
   const graphUrl = 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages'
     + '?$top=15'
     + '&$orderby=receivedDateTime desc'
@@ -226,16 +297,7 @@ async function fetchInbox(accessToken) {
     throw new Error(data.error?.message || `Graph API error: ${response.status}`);
   }
 
-  return (data.value || []).map(msg => ({
-    id: msg.id || '',
-    subject: msg.subject || '(No Subject)',
-    from: msg.from?.emailAddress?.name || '',
-    fromEmail: msg.from?.emailAddress?.address || '',
-    date: msg.receivedDateTime || '',
-    preview: msg.bodyPreview || '',
-    body: msg.body?.content || '',
-    isRead: msg.isRead || false,
-  }));
+  return (data.value || []).map(normalizeInboxMessage);
 }
 
 

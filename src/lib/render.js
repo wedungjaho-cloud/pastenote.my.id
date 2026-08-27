@@ -112,6 +112,10 @@ function buildInboxSection() {
         <h2>Inbox</h2>
       </div>
       <div class="card-header-r">
+        <div class="api-mode-pills" id="apiModeSelector" title="Pilih Mode API Inbox">
+          <button type="button" class="api-mode-btn active" data-mode="graph">Graph API</button>
+          <button type="button" class="api-mode-btn" data-mode="oauth2">OAuth2</button>
+        </div>
         <div class="ar-wrap">
           <label class="toggle" title="Auto refresh">
             <input type="checkbox" id="arToggle">

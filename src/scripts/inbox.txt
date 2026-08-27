@@ -20,6 +20,33 @@
   var btnCopyNote = document.getElementById('btnCopyNote');
   var noteContentText = document.getElementById('noteContentText');
 
+  /* ─── API Mode Selector (Graph API vs OAuth2) ─── */
+  var apiMode = localStorage.getItem('pn_api_mode') || 'graph';
+  var apiModeBtns = document.querySelectorAll('.api-mode-btn');
+
+  function updateApiModeUI() {
+    apiModeBtns.forEach(function(btn) {
+      if (btn.dataset.mode === apiMode) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+  updateApiModeUI();
+
+  apiModeBtns.forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      apiMode = btn.dataset.mode;
+      try { localStorage.setItem('pn_api_mode', apiMode); } catch(err){}
+      updateApiModeUI();
+      if (window.showToast) {
+        window.showToast('', 'Mode: ' + (apiMode === 'oauth2' ? 'OAuth2' : 'Graph API'));
+      }
+    });
+  });
+
   var loading = false, msgs = [], searchQuery = '', timer = null, cdTimer = null, cdVal = 0;
   var openIdx = -1, metaOpen = {}, deleting = {};
 
@@ -416,7 +443,7 @@
       var r = await fetch('/api/read-inbox', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: em })
+        body: JSON.stringify({ email: em, mode: apiMode })
       });
       var d = await r.json();
       if (d.success){
@@ -453,7 +480,7 @@
         var fr = await fetch('/api/read-inbox', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: em })
+          body: JSON.stringify({ email: em, mode: apiMode })
         });
         var fd = await fr.json();
         if (fd.success){

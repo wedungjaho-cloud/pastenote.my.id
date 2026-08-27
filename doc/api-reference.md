@@ -70,12 +70,13 @@ Verifikasi password visitor dan buat session.
 
 ### `POST /api/read-inbox`
 
-Baca inbox email dari Microsoft Graph API. **Memerlukan session cookie valid.**
+Baca inbox email dari Microsoft Graph API atau Outlook REST API via OAuth2. **Memerlukan session cookie valid.**
 
 **Request Body:**
 ```json
 {
-  "email": "test@outlook.com"
+  "email": "test@outlook.com",
+  "mode": "graph" // Pilihan: "graph" (Graph API v1.0) atau "oauth2" (Outlook REST v2.0)
 }
 ```
 
@@ -87,9 +88,11 @@ Baca inbox email dari Microsoft Graph API. **Memerlukan session cookie valid.**
 // Success (200)
 {
   "success": true,
+  "mode": "graph",
   "messageCount": 15,
   "messages": [
     {
+      "id": "AAMkAG...",
       "subject": "Your verification code",
       "from": "Microsoft",
       "fromEmail": "noreply@microsoft.com",

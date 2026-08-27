@@ -378,6 +378,17 @@
 
   /* ─── Tools: Check Live ─── */
   var clInput = document.getElementById('checkLiveInput');
+  var clMode = 'oauth2';
+  var clModeBtns = document.querySelectorAll('#adminCheckLiveModePills .api-mode-btn');
+
+  clModeBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      clModeBtns.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      clMode = btn.dataset.mode || 'oauth2';
+    });
+  });
+
   clInput.addEventListener('input', function() {
     document.getElementById('checkLiveCount').textContent = clInput.value.split('\n').filter(function(l) { return l.trim(); }).length + ' accounts';
   });
@@ -386,17 +397,21 @@
     var btn = this; var credentials = clInput.value.trim(); if (!credentials) return;
     btn.disabled = true; btn.querySelector('.btn-text').textContent = 'Checking...'; btn.querySelector('.btn-loader').style.display = 'inline-flex';
     var statusEl = document.getElementById('checkLiveStatus');
-    statusEl.className = 'status status-load'; statusEl.querySelector('.status-text').textContent = 'Checking accounts...'; statusEl.style.display = 'flex';
+    statusEl.className = 'status status-load'; statusEl.querySelector('.status-text').textContent = 'Checking accounts (' + (clMode === 'graph' ? 'Graph API' : 'OAuth2') + ')...'; statusEl.style.display = 'flex';
     var cLive = 0, cDie = 0, cErr = 0;
     document.getElementById('clTextLive').value = ''; document.getElementById('clTextDie').value = ''; document.getElementById('clTextErr').value = '';
 
     try {
       var lines = credentials.split('\n').filter(function(l) { return l.trim(); });
-      var res = await fetch('/api/tools/check-live', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credentials: credentials, mode: 'oauth2' }) });
+      var res = await fetch('/api/tools/check-live', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credentials: credentials, mode: clMode })
+      });
       var data = await res.json();
       document.getElementById('checkLiveResults').style.display = 'grid';
 
-      data.results.forEach(function(r) {
+      (data.results || []).forEach(function(r) {
         var orig = lines.find(function(l) { return l.split('|')[0].toLowerCase() === (r.email || '').toLowerCase(); }) || r.email;
         if (r.live) { document.getElementById('clTextLive').value += (cLive ? '\n' : '') + orig; cLive++; }
         else if (r.error && (r.error.indexOf('timeout') >= 0 || r.error.indexOf('fetch') >= 0)) { document.getElementById('clTextErr').value += (cErr ? '\n' : '') + orig; cErr++; }
@@ -407,7 +422,7 @@
       document.getElementById('clCountDie').textContent = cDie;
       document.getElementById('clCountErr').textContent = cErr;
       statusEl.className = 'status status-ok';
-      statusEl.querySelector('.status-text').textContent = cLive + ' LIVE, ' + cDie + ' DIE, ' + cErr + ' ERROR';
+      statusEl.querySelector('.status-text').textContent = cLive + ' LIVE, ' + cDie + ' DIE, ' + cErr + ' ERROR (' + (clMode === 'graph' ? 'Graph API' : 'OAuth2') + ')';
     } catch (err) {
       statusEl.className = 'status status-err';
       statusEl.querySelector('.status-text').textContent = 'Error: ' + err.message;
@@ -572,6 +587,17 @@
   var inboxSearchResultsWrap = document.getElementById('inboxSearchResultsWrap');
   var inboxSearchTbody = document.getElementById('inboxSearchTbody');
 
+  var searchMode = 'graph';
+  var searchModeBtns = document.querySelectorAll('#adminSearchModePills .api-mode-btn');
+
+  searchModeBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      searchModeBtns.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      searchMode = btn.dataset.mode || 'graph';
+    });
+  });
+
   var searchResultsData = [];
   var currentSearchFilterView = 'all';
 
@@ -673,7 +699,7 @@
       btnRunSearchInbox.querySelector('.btn-loader').style.display = 'inline-flex';
 
       inboxSearchStatus.className = 'status status-load';
-      inboxSearchStatus.querySelector('.status-text').textContent = 'Connecting to Microsoft Graph API and searching inboxes...';
+      inboxSearchStatus.querySelector('.status-text').textContent = 'Connecting via ' + (searchMode === 'oauth2' ? 'OAuth2' : 'Graph API') + ' and searching inboxes...';
       inboxSearchStatus.style.display = 'flex';
 
       try {
@@ -682,6 +708,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             credentials: creds,
+            mode: searchMode,
             subjectFilter: sub,
             senderFilter: snd,
             searchLimit: limit
@@ -718,7 +745,7 @@
           renderSearchResults();
 
           inboxSearchStatus.className = 'status status-ok';
-          inboxSearchStatus.querySelector('.status-text').textContent = 'Checked ' + s.total + ' inboxes: ' + s.matchFound + ' MATCHES FOUND, ' + s.noMatch + ' no match, ' + s.failed + ' auth failed.';
+          inboxSearchStatus.querySelector('.status-text').textContent = 'Checked ' + s.total + ' inboxes (' + (searchMode === 'oauth2' ? 'OAuth2' : 'Graph API') + '): ' + s.matchFound + ' MATCHES FOUND, ' + s.noMatch + ' no match, ' + s.failed + ' auth failed.';
           showToast('', s.matchFound + ' matching inboxes found!');
         } else {
           inboxSearchStatus.className = 'status status-err';

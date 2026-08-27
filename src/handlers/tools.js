@@ -45,7 +45,7 @@ async function handleCheckLive(request, env) {
   }
 
   const lines = body.credentials.split('\n').filter(l => l.trim());
-  const mode = body.mode || 'oauth2';
+  const mode = (body.mode === 'graph') ? 'graph' : 'oauth2';
   const results = [];
 
   for (const line of lines) {
@@ -61,14 +61,18 @@ async function handleCheckLive(request, env) {
     }
 
     try {
-      if (mode === 'oauth2' && refreshToken) {
-        // Try token refresh — if it works, account is live
+      if (refreshToken) {
+        // Try token refresh with selected mode scope
         const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
+        const scope = (mode === 'oauth2')
+          ? 'https://outlook.office.com/Mail.Read offline_access'
+          : 'https://graph.microsoft.com/Mail.Read offline_access';
+
         const tokenBody = new URLSearchParams({
           grant_type: 'refresh_token',
           refresh_token: refreshToken,
           client_id: clientId,
-          scope: 'https://graph.microsoft.com/Mail.ReadWrite offline_access',
+          scope: scope,
         });
 
         const res = await fetch(tokenUrl, {
@@ -81,17 +85,40 @@ async function handleCheckLive(request, env) {
         if (data.access_token) {
           results.push({ email, live: true, error: null });
         } else {
+          // If OAuth2 failed, try graph scope fallback
+          if (mode === 'oauth2') {
+            const fbBody = new URLSearchParams({
+              grant_type: 'refresh_token',
+              refresh_token: refreshToken,
+              client_id: clientId,
+              scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+            });
+            const fbRes = await fetch(tokenUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+              body: fbBody.toString(),
+            });
+            const fbData = await fbRes.json();
+            if (fbData.access_token) {
+              results.push({ email, live: true, error: null });
+              continue;
+            }
+          }
           results.push({ email, live: false, error: data.error_description || data.error || 'Token invalid' });
         }
       } else {
         // Basic check: try ROPC grant (email+password only)
         const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
+        const scope = (mode === 'oauth2')
+          ? 'https://outlook.office.com/Mail.Read offline_access'
+          : 'https://graph.microsoft.com/Mail.Read offline_access';
+
         const tokenBody = new URLSearchParams({
           grant_type: 'password',
           username: email,
           password: password || '',
           client_id: clientId,
-          scope: 'https://graph.microsoft.com/Mail.ReadWrite offline_access',
+          scope: scope,
         });
 
         const res = await fetch(tokenUrl, {
@@ -112,7 +139,7 @@ async function handleCheckLive(request, env) {
     }
   }
 
-  return Router.jsonResponse({ success: true, results });
+  return Router.jsonResponse({ success: true, mode, results });
 }
 
 
@@ -181,6 +208,7 @@ async function handleSearchInbox(request, env) {
   }
 
   const rawLines = body.credentials.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const mode = (body.mode === 'oauth2') ? 'oauth2' : 'graph';
   const subjectFilter = (body.subjectFilter || '').trim();
   const senderFilter = (body.senderFilter || '').trim();
   const searchLimit = Math.min(Math.max(parseInt(body.searchLimit, 10) || 15, 1), 30);
@@ -190,7 +218,7 @@ async function handleSearchInbox(request, env) {
 
   for (let i = 0; i < rawLines.length; i += chunkSize) {
     const chunk = rawLines.slice(i, i + chunkSize);
-    const chunkPromises = chunk.map(line => searchSingleAccountInbox(line, subjectFilter, senderFilter, searchLimit));
+    const chunkPromises = chunk.map(line => searchSingleAccountInbox(line, subjectFilter, senderFilter, searchLimit, mode));
     const chunkResults = await Promise.all(chunkPromises);
     results.push(...chunkResults);
   }
@@ -204,10 +232,10 @@ async function handleSearchInbox(request, env) {
     failed: results.filter(r => !r.canRead).length,
   };
 
-  return Router.jsonResponse({ success: true, summary, results });
+  return Router.jsonResponse({ success: true, mode, summary, results });
 }
 
-async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, searchLimit) {
+async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, searchLimit, mode = 'graph') {
   // Normalize line: support tab-separated and pipe-separated
   let line = rawLine;
   if (line.includes('\t')) {
@@ -243,6 +271,10 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
     let accessToken = null;
     let newRefreshToken = null;
 
+    const scope = (mode === 'oauth2')
+      ? 'https://outlook.office.com/Mail.Read offline_access'
+      : 'https://graph.microsoft.com/Mail.Read offline_access';
+
     if (refreshToken) {
       // Try refresh_token grant
       const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
@@ -250,7 +282,7 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
         grant_type: 'refresh_token',
         refresh_token: refreshToken,
         client_id: clientId,
-        scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+        scope: scope,
       });
 
       const tokenRes = await fetch(tokenUrl, {
@@ -264,18 +296,40 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
         accessToken = tokenData.access_token;
         newRefreshToken = tokenData.refresh_token || refreshToken;
       } else {
-        return {
-          email,
-          live: false,
-          canRead: false,
-          matchFound: false,
-          matchedCount: 0,
-          totalInbox: 0,
-          matches: [],
-          latestMessage: null,
-          error: tokenData.error_description || tokenData.error || 'Refresh token invalid/expired',
-          rawLine,
-        };
+        // If OAuth2 failed, try fallback scope
+        if (mode === 'oauth2') {
+          const fbBody = new URLSearchParams({
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken,
+            client_id: clientId,
+            scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+          });
+          const fbRes = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: fbBody.toString(),
+          });
+          const fbData = await fbRes.json();
+          if (fbRes.ok && fbData.access_token) {
+            accessToken = fbData.access_token;
+            newRefreshToken = fbData.refresh_token || refreshToken;
+          }
+        }
+
+        if (!accessToken) {
+          return {
+            email,
+            live: false,
+            canRead: false,
+            matchFound: false,
+            matchedCount: 0,
+            totalInbox: 0,
+            matches: [],
+            latestMessage: null,
+            error: tokenData.error_description || tokenData.error || 'Refresh token invalid/expired',
+            rawLine,
+          };
+        }
       }
     } else if (password) {
       // Fallback: try ROPC (password grant)
@@ -285,7 +339,7 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
         username: email,
         password: password,
         client_id: clientId,
-        scope: 'https://graph.microsoft.com/Mail.Read offline_access',
+        scope: scope,
       });
 
       const tokenRes = await fetch(tokenUrl, {
@@ -327,47 +381,69 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
       };
     }
 
-    // 2. Fetch inbox messages from Microsoft Graph API
-    const graphUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=${searchLimit}&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead`;
-    const graphRes = await fetch(graphUrl, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    // 2. Fetch inbox messages
+    let rawMsgs = [];
 
-    const graphData = await graphRes.json();
-
-    if (!graphRes.ok) {
-      return {
-        email,
-        live: true,
-        canRead: false,
-        matchFound: false,
-        matchedCount: 0,
-        totalInbox: 0,
-        matches: [],
-        latestMessage: null,
-        error: graphData.error?.message || `Graph API error (${graphRes.status})`,
-        rawLine,
-      };
+    if (mode === 'oauth2') {
+      const outlookUrl = `https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=${searchLimit}&$orderby=DateTimeReceived desc&$select=Id,Subject,From,DateTimeReceived,BodyPreview,Body,IsRead`;
+      try {
+        const outRes = await fetch(outlookUrl, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: 'application/json',
+          },
+        });
+        if (outRes.ok) {
+          const outData = await outRes.json();
+          rawMsgs = outData.value || [];
+        }
+      } catch (_) {}
     }
 
-    const rawMsgs = graphData.value || [];
+    // Default / Fallback: Microsoft Graph API v1.0
+    if (!rawMsgs.length) {
+      const graphUrl = `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=${searchLimit}&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead`;
+      const graphRes = await fetch(graphUrl, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      const graphData = await graphRes.json();
+
+      if (!graphRes.ok) {
+        return {
+          email,
+          live: true,
+          canRead: false,
+          matchFound: false,
+          matchedCount: 0,
+          totalInbox: 0,
+          matches: [],
+          latestMessage: null,
+          error: graphData.error?.message || `Graph API error (${graphRes.status})`,
+          rawLine,
+        };
+      }
+
+      rawMsgs = graphData.value || [];
+    }
     const parsedMsgs = rawMsgs.map(msg => {
-      const subj = msg.subject || '(No Subject)';
-      const fromName = msg.from?.emailAddress?.name || '';
-      const fromAddr = msg.from?.emailAddress?.address || '';
-      const prev = msg.bodyPreview || '';
-      const content = msg.body?.content || '';
+      const subj = msg.subject || msg.Subject || '(No Subject)';
+      const fromName = msg.from?.emailAddress?.name || msg.From?.EmailAddress?.Name || '';
+      const fromAddr = msg.from?.emailAddress?.address || msg.From?.EmailAddress?.Address || '';
+      const date = msg.receivedDateTime || msg.DateTimeReceived || msg.createdDateTime || msg.DateTimeCreated || '';
+      const prev = msg.bodyPreview || msg.BodyPreview || '';
+      const content = msg.body?.content || msg.Body?.Content || '';
       const otp = extractOtpCode(subj, prev, content);
 
       return {
-        id: msg.id || '',
+        id: msg.id || msg.Id || '',
         subject: subj,
         from: fromName || fromAddr || 'Unknown',
         fromEmail: fromAddr,
-        date: msg.receivedDateTime || '',
+        date: date,
         preview: prev,
         bodySnippet: content ? content.substring(0, 8000) : prev,
-        isRead: !!msg.isRead,
+        isRead: (msg.isRead !== undefined) ? !!msg.isRead : ((msg.IsRead !== undefined) ? !!msg.IsRead : false),
         otp: otp,
       };
     });

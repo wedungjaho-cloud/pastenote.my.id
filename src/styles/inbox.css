@@ -482,3 +482,39 @@
   font-size: 12.5px;
 }
 
+/* ── API Mode Toggle Pills (Graph API vs OAuth2) ── */
+.api-mode-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 2px;
+}
+.api-mode-btn {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: calc(var(--r-md) - 2px);
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+  line-height: 1.2;
+}
+.api-mode-btn:hover {
+  color: var(--ink);
+  background: var(--surface-3);
+}
+.api-mode-btn.active {
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid rgba(62, 207, 142, 0.25);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+}
+
+
