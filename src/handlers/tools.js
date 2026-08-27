@@ -71,9 +71,13 @@ async function handleCheckLive(request, env) {
     try {
       if (refreshToken) {
         const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
-        const scopesToTry = (mode === 'oauth2')
-          ? [undefined, 'https://outlook.office.com/Mail.Read offline_access', 'https://graph.microsoft.com/Mail.Read offline_access']
-          : ['https://graph.microsoft.com/Mail.Read offline_access', undefined, 'https://outlook.office.com/Mail.Read offline_access'];
+        // Try without scope first (uses consented defaults, 1 fetch in happy path)
+        const scopesToTry = [
+          undefined,
+          (mode === 'oauth2')
+            ? 'https://outlook.office.com/Mail.Read offline_access'
+            : 'https://graph.microsoft.com/Mail.Read offline_access',
+        ];
 
         let liveFound = false;
         let lastErr = 'Token invalid';
@@ -155,9 +159,12 @@ async function handleGetToken(request, env) {
 
   try {
     const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
-    const scopesToTry = (mode === 'oauth2')
-      ? [undefined, 'https://outlook.office.com/Mail.Read offline_access', 'https://graph.microsoft.com/Mail.Read offline_access']
-      : ['https://graph.microsoft.com/Mail.Read offline_access', undefined, 'https://outlook.office.com/Mail.Read offline_access'];
+    const scopesToTry = [
+      undefined,
+      (mode === 'oauth2')
+        ? 'https://outlook.office.com/Mail.Read offline_access'
+        : 'https://graph.microsoft.com/Mail.Read offline_access',
+    ];
 
     let lastError = 'Failed to get token';
 
@@ -211,7 +218,7 @@ async function handleSearchInbox(request, env) {
   const searchLimit = Math.min(Math.max(parseInt(body.searchLimit, 10) || 15, 1), 30);
 
   const results = [];
-  const chunkSize = 5; // Concurrency limit to prevent hitting subrequest/rate limits
+  const chunkSize = 3; // Conservative: ~2 subrequests/account × 3 = 6 per chunk
 
   for (let i = 0; i < rawLines.length; i += chunkSize) {
     const chunk = rawLines.slice(i, i + chunkSize);
@@ -264,15 +271,19 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
   }
 
   try {
-    // 1. Get access token with adaptive scopes
+    // 1. Get access token — try without scope first (1 fetch in happy path)
     let accessToken = null;
     let newRefreshToken = null;
+    let tokenScope = '';
 
     if (refreshToken) {
       const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
-      const scopesToTry = (mode === 'oauth2')
-        ? [undefined, 'https://outlook.office.com/Mail.Read offline_access', 'https://graph.microsoft.com/Mail.Read offline_access']
-        : ['https://graph.microsoft.com/Mail.Read offline_access', undefined, 'https://outlook.office.com/Mail.Read offline_access'];
+      const scopesToTry = [
+        undefined,
+        (mode === 'oauth2')
+          ? 'https://outlook.office.com/Mail.Read offline_access'
+          : 'https://graph.microsoft.com/Mail.Read offline_access',
+      ];
 
       let lastErr = 'Refresh token invalid/expired';
 
@@ -294,6 +305,7 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
         if (tokenData.access_token) {
           accessToken = tokenData.access_token;
           newRefreshToken = tokenData.refresh_token || refreshToken;
+          tokenScope = tokenData.scope || '';
           break;
         } else {
           lastErr = tokenData.error_description || tokenData.error || lastErr;
@@ -364,7 +376,7 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
       };
     }
 
-    // 2. Fetch inbox messages with adaptive dual endpoint fallback
+    // 2. Fetch inbox — smart-route based on token scope (avoids unnecessary subrequests)
     let rawMsgs = [];
     const endpoints = [];
 
@@ -377,12 +389,17 @@ async function searchSingleAccountInbox(rawLine, subjectFilter, senderFilter, se
       url: `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=${searchLimit}&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead`
     };
 
-    if (mode === 'oauth2') {
-      endpoints.push(outlookEp);
-      endpoints.push(graphEp);
+    const hasOutlookScope = tokenScope.includes('outlook.office.com');
+    const hasGraphScope = tokenScope.includes('graph.microsoft.com');
+
+    if (hasOutlookScope && !hasGraphScope) {
+      endpoints.push(outlookEp);  // token only works for Outlook
+    } else if (hasGraphScope && !hasOutlookScope) {
+      endpoints.push(graphEp);    // token only works for Graph
+    } else if (mode === 'oauth2') {
+      endpoints.push(outlookEp, graphEp);
     } else {
-      endpoints.push(graphEp);
-      endpoints.push(outlookEp);
+      endpoints.push(graphEp, outlookEp);
     }
 
     let fetchError = null;

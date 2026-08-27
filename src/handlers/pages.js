@@ -151,9 +151,11 @@ export async function handleReadInbox(request, env) {
 
   // Refresh token according to selected mode
   let accessToken;
+  let tokenScope = '';
   try {
     const tokenResult = await refreshOAuth2Token(config.refresh_token, config.client_id, mode);
     accessToken = tokenResult.access_token;
+    tokenScope = tokenResult.scope || '';
 
     // Save new refresh token (Microsoft rotates them)
     if (tokenResult.refresh_token && tokenResult.refresh_token !== config.refresh_token) {
@@ -165,7 +167,7 @@ export async function handleReadInbox(request, env) {
 
   // Fetch inbox according to selected mode
   try {
-    const messages = await fetchInbox(accessToken, mode);
+    const messages = await fetchInbox(accessToken, mode, tokenScope);
     return Router.jsonResponse({
       success: true,
       mode,
@@ -179,20 +181,21 @@ export async function handleReadInbox(request, env) {
 
 
 // ─── OAuth2 Token Refresh ────────────────────────────────────
+// Strategy: try without scope first (uses consented defaults, usually works
+// for MSA/consumer tokens). Only fallback to explicit scopes if needed.
+// This minimizes subrequests (1 fetch in the happy path).
 
 async function refreshOAuth2Token(refreshToken, clientId, mode = 'graph') {
   const tokenUrl = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
 
-  const scopesToTry = [];
-  if (mode === 'oauth2') {
-    scopesToTry.push(undefined); // Consented scope default
-    scopesToTry.push('https://outlook.office.com/Mail.Read offline_access');
-    scopesToTry.push('https://graph.microsoft.com/Mail.Read offline_access');
-  } else {
-    scopesToTry.push('https://graph.microsoft.com/Mail.Read offline_access');
-    scopesToTry.push(undefined);
-    scopesToTry.push('https://outlook.office.com/Mail.Read offline_access');
-  }
+  // Always try without scope first — MSA consumer tokens return their
+  // originally-consented scopes, avoiding invalid_grant errors.
+  const scopesToTry = [
+    undefined, // consented default — usually succeeds
+    (mode === 'oauth2')
+      ? 'https://outlook.office.com/Mail.Read offline_access'
+      : 'https://graph.microsoft.com/Mail.Read offline_access',
+  ];
 
   let lastError = 'Token refresh failed';
 
@@ -216,7 +219,7 @@ async function refreshOAuth2Token(refreshToken, clientId, mode = 'graph') {
           access_token: data.access_token,
           refresh_token: data.refresh_token || refreshToken,
           expires_in: data.expires_in,
-          scope: data.scope,
+          scope: data.scope || '',
         };
       } else {
         lastError = data.error_description || data.error || lastError;
@@ -247,10 +250,10 @@ function normalizeInboxMessage(msg) {
 
 
 // ─── Fetch Inbox (Graph API or Outlook REST API) ─────────────
+// Uses tokenScope to pick the correct endpoint on the first try,
+// avoiding a wasted subrequest to the wrong API.
 
-async function fetchInbox(accessToken, mode = 'graph') {
-  const endpoints = [];
-
+async function fetchInbox(accessToken, mode = 'graph', tokenScope = '') {
   const outlookEp = {
     type: 'outlook',
     url: 'https://outlook.office.com/api/v2.0/me/mailfolders/inbox/messages?$top=15&$orderby=ReceivedDateTime desc&$select=Id,Subject,From,ReceivedDateTime,BodyPreview,Body,IsRead'
@@ -260,12 +263,19 @@ async function fetchInbox(accessToken, mode = 'graph') {
     url: 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=15&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body,isRead'
   };
 
-  if (mode === 'oauth2') {
-    endpoints.push(outlookEp);
-    endpoints.push(graphEp);
+  // Smart routing: pick endpoint based on actual token scope, not just user preference
+  const endpoints = [];
+  const hasOutlookScope = tokenScope.includes('outlook.office.com');
+  const hasGraphScope = tokenScope.includes('graph.microsoft.com');
+
+  if (hasOutlookScope && !hasGraphScope) {
+    endpoints.push(outlookEp);  // token only works for Outlook
+  } else if (hasGraphScope && !hasOutlookScope) {
+    endpoints.push(graphEp);    // token only works for Graph
+  } else if (mode === 'oauth2') {
+    endpoints.push(outlookEp, graphEp);
   } else {
-    endpoints.push(graphEp);
-    endpoints.push(outlookEp);
+    endpoints.push(graphEp, outlookEp);
   }
 
   let lastError = 'Inbox fetch failed';
