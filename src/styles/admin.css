@@ -421,3 +421,23 @@
   border-color: var(--green);
 }
 
+.btn-tpl-token {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: var(--r-xs);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--ink-dim);
+  cursor: pointer;
+  transition: all 0.14s var(--ease);
+}
+.btn-tpl-token:hover {
+  background: var(--green-dim);
+  color: var(--green);
+  border-color: rgba(62, 207, 142, 0.4);
+  transform: translateY(-1px);
+}
+
+

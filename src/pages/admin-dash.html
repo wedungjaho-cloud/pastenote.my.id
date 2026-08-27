@@ -241,6 +241,13 @@
           <div class="field" id="formatCustomWrap" style="display:none">
             <label class="label" style="margin-bottom:4px;font-size:11px">Custom Pattern (e.g. {email}:{password})</label>
             <input type="text" id="formatCustomTpl" class="inp" placeholder="{email}:{password}" style="font-size:12px" value="{email}:{password}">
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;align-items:center">
+              <span style="font-size:10px;color:var(--muted-2);margin-right:2px">Insert:</span>
+              <button type="button" class="preset-chip btn-tpl-token" data-token="{email}">{email}</button>
+              <button type="button" class="preset-chip btn-tpl-token" data-token="{password}">{password}</button>
+              <button type="button" class="preset-chip btn-tpl-token" data-token="{refresh_token}">{refresh_token}</button>
+              <button type="button" class="preset-chip btn-tpl-token" data-token="{client_id}">{client_id}</button>
+            </div>
           </div>
         </div>
 
@@ -358,7 +365,10 @@
             <span id="modalSender" style="font-size:11.5px;color:var(--muted)"></span>
           </div>
         </div>
-        <button id="btnCloseMsgModal" class="btn btn-g btn-sm" style="height:28px">Close</button>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button id="btnCopyMsgBody" class="btn btn-s btn-sm" style="height:28px">Copy Body</button>
+          <button id="btnCloseMsgModal" class="btn btn-g btn-sm" style="height:28px">Close</button>
+        </div>
       </div>
       <div class="card-body" style="overflow-y:auto;padding:16px;flex:1">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)">

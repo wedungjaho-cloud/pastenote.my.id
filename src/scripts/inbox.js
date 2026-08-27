@@ -577,9 +577,48 @@
       if (arT.checked){ if (!loading) doRead(); startAR(); if (window.showToast) window.showToast('', 'Auto refresh on'); }
       else { stopAR(); if (window.showToast) window.showToast('', 'Auto refresh off'); }
     });
+  /* ─── Search & Note Copy Listeners ─── */
+  if (mailSearch) {
+    mailSearch.addEventListener('input', function(){
+      searchQuery = mailSearch.value.trim();
+      if (btnClearSearch) btnClearSearch.style.display = searchQuery ? 'inline-flex' : 'none';
+      openIdx = -1;
+      render();
+    });
   }
-  if (arI) {
-    arI.addEventListener('change', function(){ if (arT && arT.checked) startAR(); });
+
+  if (btnClearSearch) {
+    btnClearSearch.addEventListener('click', function(){
+      if (mailSearch) {
+        mailSearch.value = '';
+        mailSearch.focus();
+      }
+      searchQuery = '';
+      btnClearSearch.style.display = 'none';
+      openIdx = -1;
+      render();
+    });
+  }
+
+  if (btnCopyNote && noteContentText) {
+    btnCopyNote.addEventListener('click', function(){
+      var text = noteContentText.textContent || noteContentText.innerText || '';
+      if (!text || text === 'No notes recorded.') {
+        if (window.showToast) window.showToast('', 'Note is empty');
+        return;
+      }
+      navigator.clipboard.writeText(text).then(function(){
+        btnCopyNote.classList.add('copied');
+        var span = btnCopyNote.querySelector('span');
+        var orig = span ? span.textContent : 'Copy';
+        if (span) span.textContent = 'Copied!';
+        if (window.showToast) window.showToast('', 'Notes copied to clipboard');
+        setTimeout(function(){
+          btnCopyNote.classList.remove('copied');
+          if (span) span.textContent = orig;
+        }, 1800);
+      });
+    });
   }
 
   /* ─── Resizable Split Pane ─── */

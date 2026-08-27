@@ -155,6 +155,18 @@ button {
   background: none;
 }
 
+/* Suppress native browser eye/clear icons on inputs */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+/* Global Focus Rings for Keyboard Accessibility */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--void), 0 0 0 4px var(--green) !important;
+}
+
 /* ── Base Styles ── */
 body {
   font-family: var(--font-ui);
@@ -163,6 +175,7 @@ body {
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   min-height: 100vh;
   line-height: 1.55;
   letter-spacing: -0.01em;

@@ -431,9 +431,36 @@
     }
   });
 
-  document.getElementById('clCopyLive').addEventListener('click', function() { navigator.clipboard.writeText(document.getElementById('clTextLive').value); showToast('', 'Copied'); });
-  document.getElementById('clCopyDie').addEventListener('click', function() { navigator.clipboard.writeText(document.getElementById('clTextDie').value); showToast('', 'Copied'); });
-  document.getElementById('clCopyErr').addEventListener('click', function() { navigator.clipboard.writeText(document.getElementById('clTextErr').value); showToast('', 'Copied'); });
+  function setCopiedBtn(btn, msg) {
+    if (!btn) return;
+    btn.classList.add('copied');
+    var orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    showToast('', msg || 'Copied!');
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.textContent = orig;
+    }, 1800);
+  }
+
+  document.getElementById('clCopyLive').addEventListener('click', function() {
+    var text = document.getElementById('clTextLive').value;
+    if (!text) { showToast('', 'No live accounts to copy'); return; }
+    var btn = this;
+    navigator.clipboard.writeText(text).then(function() { setCopiedBtn(btn, 'Live accounts copied'); });
+  });
+  document.getElementById('clCopyDie').addEventListener('click', function() {
+    var text = document.getElementById('clTextDie').value;
+    if (!text) { showToast('', 'No dead accounts to copy'); return; }
+    var btn = this;
+    navigator.clipboard.writeText(text).then(function() { setCopiedBtn(btn, 'Dead accounts copied'); });
+  });
+  document.getElementById('clCopyErr').addEventListener('click', function() {
+    var text = document.getElementById('clTextErr').value;
+    if (!text) { showToast('', 'No error accounts to copy'); return; }
+    var btn = this;
+    navigator.clipboard.writeText(text).then(function() { setCopiedBtn(btn, 'Error accounts copied'); });
+  });
 
   /* ─── Tools: Multi-Format Parser & Converter ─── */
   var formatTargetType = document.getElementById('formatTargetType');
@@ -561,8 +588,12 @@
   });
 
   document.getElementById('fmtCopy').addEventListener('click', function() {
-    navigator.clipboard.writeText(document.getElementById('formatResult').value);
-    showToast('', 'Formatted accounts copied!');
+    var val = document.getElementById('formatResult').value;
+    if (!val) { showToast('', 'No formatted accounts to copy'); return; }
+    var btn = this;
+    navigator.clipboard.writeText(val).then(function() {
+      setCopiedBtn(btn, 'Formatted accounts copied!');
+    });
   });
 
   document.getElementById('fmtDownload').addEventListener('click', function() {
@@ -807,24 +838,45 @@
     });
   }
 
+    // Handle Custom Pattern Token Chips
+    document.querySelectorAll('.btn-tpl-token').forEach(function(chip) {
+      chip.addEventListener('click', function() {
+        if (!formatCustomTpl) return;
+        var tok = chip.dataset.token;
+        var start = formatCustomTpl.selectionStart || formatCustomTpl.value.length;
+        var end = formatCustomTpl.selectionEnd || formatCustomTpl.value.length;
+        var val = formatCustomTpl.value;
+        formatCustomTpl.value = val.substring(0, start) + tok + val.substring(end);
+        formatCustomTpl.focus();
+        formatCustomTpl.selectionStart = formatCustomTpl.selectionEnd = start + tok.length;
+      });
+    });
+
   // Modal handlers
   var msgPreviewModal = document.getElementById('msgPreviewModal');
   var btnCloseMsgModal = document.getElementById('btnCloseMsgModal');
+  var btnCopyMsgBody = document.getElementById('btnCopyMsgBody');
+  var curModalBodyText = '';
 
   function openMsgModal(accountEmail, m) {
     if (!msgPreviewModal) return;
     document.getElementById('modalSubject').textContent = m.subject || '(No Subject)';
     document.getElementById('modalSender').textContent = 'Account: ' + accountEmail + ' | From: ' + (m.from || m.fromEmail);
     document.getElementById('modalDate').textContent = fmtSearchDate(m.date);
+    curModalBodyText = m.bodySnippet || m.preview || '';
 
     var otpWrap = document.getElementById('modalOtpWrap');
     var otpVal = document.getElementById('modalOtpVal');
     if (m.otp) {
       otpVal.textContent = m.otp;
       otpWrap.style.display = 'block';
-      document.getElementById('modalOtpCode').onclick = function() {
-        navigator.clipboard.writeText(m.otp);
-        showToast('', 'OTP ' + m.otp + ' copied!');
+      var otpChipModal = document.getElementById('modalOtpCode');
+      otpChipModal.onclick = function() {
+        navigator.clipboard.writeText(m.otp).then(function(){
+          otpChipModal.classList.add('copied');
+          showToast('', 'OTP ' + m.otp + ' copied!');
+          setTimeout(function(){ otpChipModal.classList.remove('copied'); }, 1400);
+        });
       };
     } else {
       otpWrap.style.display = 'none';
@@ -832,7 +884,7 @@
 
     var bodyContainer = document.getElementById('modalBodyContent');
     if (m.bodySnippet && m.bodySnippet.includes('<')) {
-      bodyContainer.innerHTML = '<iframe style="width:100%;height:320px;border:none;background:#fff" sandbox="allow-same-origin" srcdoc="' + esc(m.bodySnippet).replace(/"/g, '&quot;') + '"></iframe>';
+      bodyContainer.innerHTML = '<iframe style="width:100%;height:320px;border:none;background:#fff;border-radius:4px" sandbox="allow-same-origin" srcdoc="' + esc(m.bodySnippet).replace(/"/g, '&quot;') + '"></iframe>';
       var iframe = bodyContainer.querySelector('iframe');
       if (iframe) iframe.srcdoc = m.bodySnippet;
     } else {
@@ -842,30 +894,70 @@
     msgPreviewModal.style.display = 'flex';
   }
 
+  function closeMsgModal() {
+    if (msgPreviewModal) msgPreviewModal.style.display = 'none';
+  }
+
   if (btnCloseMsgModal && msgPreviewModal) {
-    btnCloseMsgModal.addEventListener('click', function() { msgPreviewModal.style.display = 'none'; });
+    btnCloseMsgModal.addEventListener('click', closeMsgModal);
     msgPreviewModal.addEventListener('click', function(e) {
-      if (e.target === msgPreviewModal) msgPreviewModal.style.display = 'none';
+      if (e.target === msgPreviewModal) closeMsgModal();
     });
   }
 
+  if (btnCopyMsgBody) {
+    btnCopyMsgBody.addEventListener('click', function() {
+      if (!curModalBodyText) { showToast('', 'No message body to copy'); return; }
+      navigator.clipboard.writeText(curModalBodyText).then(function() {
+        btnCopyMsgBody.classList.add('copied');
+        var orig = btnCopyMsgBody.textContent;
+        btnCopyMsgBody.textContent = 'Copied!';
+        showToast('', 'Message body copied to clipboard');
+        setTimeout(function() {
+          btnCopyMsgBody.classList.remove('copied');
+          btnCopyMsgBody.textContent = orig;
+        }, 1800);
+      });
+    });
+  }
+
+  // Global Escape key listener to close modals
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeMsgModal();
+      var editP = document.getElementById('editPanel');
+      var bulkP = document.getElementById('bulkPanel');
+      // If modal is open, modal is prioritized
+    }
+  });
+
   // Export Matched Emails
   document.getElementById('btnCopyMatchedEmails')?.addEventListener('click', function() {
+    var btn = this;
     var matched = searchResultsData.filter(function(r){ return r.matchFound; });
     if (!matched.length) { showToast('', 'No matched emails to copy'); return; }
     var emails = matched.map(function(r){ return r.email; }).join('\n');
     navigator.clipboard.writeText(emails).then(function() {
+      btn.classList.add('copied');
+      var orig = btn.textContent;
+      btn.textContent = 'Copied!';
       showToast('', matched.length + ' matched emails copied!');
+      setTimeout(function(){ btn.classList.remove('copied'); btn.textContent = orig; }, 1800);
     });
   });
 
   // Export Full Matched Configs
   document.getElementById('btnCopyMatchedConfigs')?.addEventListener('click', function() {
+    var btn = this;
     var matched = searchResultsData.filter(function(r){ return r.matchFound; });
     if (!matched.length) { showToast('', 'No matched accounts to copy'); return; }
     var configs = matched.map(function(r){ return r.rawLine || r.email; }).join('\n');
     navigator.clipboard.writeText(configs).then(function() {
+      btn.classList.add('copied');
+      var orig = btn.textContent;
+      btn.textContent = 'Copied!';
       showToast('', matched.length + ' matched configs copied!');
+      setTimeout(function(){ btn.classList.remove('copied'); btn.textContent = orig; }, 1800);
     });
   });
 

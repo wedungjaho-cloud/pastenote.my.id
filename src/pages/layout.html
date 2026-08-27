@@ -50,7 +50,8 @@
     if (!c) return;
     var el = document.createElement('div');
     el.className = 'toast';
-    el.innerHTML = '<span>' + msg + '</span>';
+    var iconHtml = ic ? '<span class="toast-ic">' + ic + '</span>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green);flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>';
+    el.innerHTML = iconHtml + '<span>' + msg + '</span>';
     c.appendChild(el);
     setTimeout(function(){ el.classList.add('out'); setTimeout(function(){ el.remove(); }, 200); }, 3000);
   };

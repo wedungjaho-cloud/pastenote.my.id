@@ -23,7 +23,8 @@
 
   /* Admin header */
   .hdr-admin .hdr-in { flex-wrap: wrap; justify-content: center; gap: 8px; height: auto; padding: 8px var(--gutter); }
-  .hdr-admin .nav-pills { order: 10; width: 100%; justify-content: center; }
+  .hdr-admin .nav-pills { order: 10; width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+  .hdr-admin .nav-pill { width: 100%; text-align: center; padding: 6px 4px; font-size: 12px; }
 
   /* Page Layouts */
   .page { padding: 16px var(--gutter) 40px; gap: 14px; }
